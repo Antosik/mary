@@ -1,0 +1,13 @@
+# node files
+node_modules
+
+# build dirs
+dist
+target
+
+# env files
+.env
+
+# editor files
+.vscode
+.idea

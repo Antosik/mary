@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json.schemastore.org/electron-builder",
+  "appId": "com.antosik.mary",
+  "productName": "Mary",
+  "files": [
+    "./target/app/main.js",
+    "./node_modules/**/*",
+    "./package.json"
+  ],
+  "extraResources": [
+    {
+      "from": "./target",
+      "to": "."
+    }
+  ],
+  "directories": {
+    "buildResources": "./build",
+    "output": "./dist"
+  },
+  "asarUnpack": [
+    "**/*.node"
+  ],
+  "mac": {
+    "category": "public.app-category.games",
+    "target": "dmg"
+  },
+  "dmg": {
+    "iconSize": 80,
+    "window": {
+      "x": 400,
+      "y": 100,
+      "width": 540,
+      "height": 380
+    },
+    "contents": [
+      {
+        "x": 130,
+        "y": 222.5
+      },
+      {
+        "x": 410,
+        "y": 222.5,
+        "type": "link",
+        "path": "/Applications"
+      }
+    ]
+  },
+  "linux": {
+    "target": [
+      "AppImage"
+    ]
+  },
+  "win": {
+    "target": [
+      {
+        "target": "portable",
+        "arch": [
+          "x64"
+        ]
+      }
+    ]
+  },
+  "nsis": {
+    "oneClick": false,
+    "perMachine": false,
+    "allowToChangeInstallationDirectory": true
+  },
+  "buildDependenciesFromSource": true,
+  "npmRebuild": true
+}
