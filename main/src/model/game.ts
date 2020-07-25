@@ -18,6 +18,7 @@ export class Game implements IInternalGameNew {
       && first.gid === second.gid;
   }
 
+  #me: string;
   #stats: TInternalGameStatsNew;
   #players: Map<string, Player>;
   #events: TInternalGameEventNew[];
@@ -26,11 +27,13 @@ export class Game implements IInternalGameNew {
   #isPlayersMapGenerated: boolean;
 
   constructor(
+    me: string,
     stats: ILiveAPIGameStats,
     players?: ILiveAPIPlayer[],
     events?: TInternalGameEventNew[],
     cooldowns?: IInternalObjectCooldownNew[]
   ) {
+    this.#me = me;
     this.#stats = GameDataTransformer.transformToInternal(stats);
     this.#players = new Map<string, Player>();
     this.#events = [];
@@ -52,6 +55,12 @@ export class Game implements IInternalGameNew {
   // #region Getters & Setters
   public get gid(): string {
     return Array.from(this.#players.keys()).join("#");
+  }
+  public get me(): string {
+    return this.#me;
+  }
+  public get mePlayer(): Player | undefined {
+    return this.#players.get(this.#me);
   }
   public get stats(): TInternalGameStatsNew {
     return this.#stats;
@@ -91,6 +100,10 @@ export class Game implements IInternalGameNew {
   public setPlayers(value: ILiveAPIPlayer[]): void {
 
     for (const rawPlayer of value) {
+
+      if (rawPlayer.isBot) {
+        continue;
+      }
 
       const existingPlayer = this.#players.get(rawPlayer.summonerName);
       const transformedRawPlayer = PlayerTransformer.transformToInternal(rawPlayer);

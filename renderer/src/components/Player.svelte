@@ -2,9 +2,9 @@
   import { createEventDispatcher } from "svelte";
   import { isNotEmpty } from "@mary-shared/utils/typeguards";
 
-  import SummonerSpell from "./SummonerSpell.svelte";
-  import TimeCounter from "./TimeCounter.svelte";
-  import ChampionR from "./ChampionR.svelte";
+  import SummonerSpell from "@mary-web/components/SummonerSpell.svelte";
+  import TimeCounter from "@mary-web/components/TimeCounter.svelte";
+  import ChampionR from "@mary-web/components/ChampionR.svelte";
 
   export let summonerName: string;
   export let championName: string;

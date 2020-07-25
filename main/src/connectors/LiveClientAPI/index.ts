@@ -11,6 +11,10 @@ export class LiveClientAPI {
   private static RETRY_INTERVAL = 3;
   private static RETRY_COUNT = 3;
 
+  public static async getActivePlayerName(): Promise<string> {
+    return await LiveClientAPI.request<string>("activeplayername");
+  }
+
   public static async getPlayersList(): Promise<ILiveAPIPlayer[]> {
     return await LiveClientAPI.request<ILiveAPIPlayer[]>("playerlist");
   }

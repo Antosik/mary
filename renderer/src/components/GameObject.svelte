@@ -1,5 +1,5 @@
 <script lang="typescript">
-  import TimeCounter from "./TimeCounter.svelte";
+  import TimeCounter from "@mary-web/components/TimeCounter.svelte";
 
   export let target: TInternalCooldownObjectNew;
   export let end: Date;

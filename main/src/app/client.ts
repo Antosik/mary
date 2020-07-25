@@ -1,16 +1,17 @@
 import type { MainWindow } from "@mary-main/ui/main";
-import type { Cooldown } from "@mary-main/model/cooldown";
 import type { Player } from "@mary-main/model/player";
+import type { ObjectCooldown } from "@mary-main/model/objectcooldown";
+import type { PlayerCooldown } from "@mary-main/model/playercooldown";
 
 import { LiveClientAPI } from "@mary-main/connectors/LiveClientAPI";
 import { LiveClientAPIPing } from "@mary-main/connectors/LiveClientAPI/ping";
 import { Game } from "@mary-main/model/game";
+import { settingsStore } from "@mary-main/storage/settings";
 import { Events } from "@mary-main/utils/events";
 import { MainRPC } from "@mary-main/utils/rpc";
 import { Result } from "@mary-shared/utils/result";
 import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
-import { PlayerCooldown } from "@mary-main/model/playercooldown";
-import { ObjectCooldown } from "@mary-main/model/objectcooldown";
+import { SettingsWindow, createSettingsWindow } from "@mary-main/ui/settings";
 
 
 export class Mary {
@@ -21,6 +22,8 @@ export class Mary {
 
   #window: MainWindow;
   #rpc: MainRPC;
+  #settingsWindow: SettingsWindow | null;
+  #settingsRPC: MainRPC | null;
 
   public static mount(window: MainWindow): Mary {
     return new this(window);
@@ -30,6 +33,9 @@ export class Mary {
 
     this.#window = window;
     this.#rpc = new MainRPC(this.#window);
+
+    this.#settingsWindow = null;
+    this.#settingsRPC = null;
 
     this.#liveClientApiPing = new LiveClientAPIPing();
 
@@ -65,33 +71,72 @@ export class Mary {
 
   private _handleRPCEvents() {
 
-    this.#rpc.setHandler("live:connect", async () => {
+    MainRPC.setHandler("live:connect", async () => {
       await this.#liveClientApiPing.start();
     });
 
-    this.#rpc.setHandler("cooldowns:object:get", () => {
+    MainRPC.setHandler("cooldowns:object:get", () => {
       const cooldowns = isExists(this.#game)
         ? this.#game.getObjectsCooldowns()
         : [];
       return Result.create(cooldowns, "success");
     });
 
-    this.#rpc.setHandler("cooldowns:player:get", () => {
+    MainRPC.setHandler("cooldowns:player:get", () => {
       const cooldowns = isExists(this.#game)
         ? this.#game.getPlayersCooldowns()
         : [];
       return Result.create(cooldowns, "success");
     });
 
-    this.#rpc.setHandler("cooldown:player:set", (summonerName: string, target: TInternalCooldownTargetNew) => {
+    MainRPC.setHandler("cooldown:player:set", (summonerName: string, target: TInternalCooldownTargetNew) => {
       this._getPlayer(summonerName).setCooldown(target);
     });
 
-    this.#rpc.setHandler("cooldown:player:reset", (summonerName: string, target: TInternalCooldownTargetNew) => {
+    MainRPC.setHandler("cooldown:player:reset", (summonerName: string, target: TInternalCooldownTargetNew) => {
       this._getPlayer(summonerName).resetCooldown(target);
     });
 
+    MainRPC.setHandler("settings:open", () => {
+      if (isExists(this.#settingsWindow)) {
+        return this.#settingsWindow.focus();
+      }
+      this._runSettingsWindow();
+    });
+
+    MainRPC.setHandler("settings:load", () => {
+      return Result.create(settingsStore.store, "success");
+    });
+
+    MainRPC.setHandler("settings:save", (data: IInternalSettingsNew) => {
+      settingsStore.set(data);
+      this.#rpc.send("settings:updated", Result.create(data, "success"));
+    });
+
     return this;
+  }
+
+  private async _initGame(): Promise<void> {
+    const [gameData, myName, players, events] = await Promise.all([
+      LiveClientAPI.getGameStats(),
+      LiveClientAPI.getActivePlayerName(),
+      LiveClientAPI.getPlayersList(),
+      LiveClientAPI.getGameEvents()
+    ]);
+
+    this.#game = new Game(myName, gameData);
+    this.#game.setPlayers(players);
+    this.#game.setEvents(events);
+  }
+
+  private _sendMeta(): void {
+    this.#rpc.send("live:me", Result.create(this.#game!.mePlayer?.rawValue));
+    this.#rpc.send("live:players",
+      Result.create(
+        Array.from(this.#game!.players.values()).map(p => p.rawValue),
+        "success"
+      )
+    );
   }
 
   private _handleLiveGameAPIEvents() {
@@ -101,27 +146,19 @@ export class Mary {
 
       this.#rpc.send("live:connected");
 
-      const gameData = await LiveClientAPI.getGameStats();
-      this.#game = new Game(gameData);
-
-      const [players, events] = await Promise.all([
-        LiveClientAPI.getPlayersList(),
-        LiveClientAPI.getGameEvents()
-      ]);
-
-      this.#game.setPlayers(players);
-      this.#game.setEvents(events);
-
-      this.#rpc.send("live:players",
-        Result.create(
-          Array.from(this.#game.players.values()).map(p => p.rawValue),
-          "success"
-        )
-      );
+      await this._initGame();
+      this._sendMeta();
     });
 
-    this.#liveClientApiPing.on("reconnected", () => {
+    this.#liveClientApiPing.on("reconnected", async () => {
+
+      if (isNotExists(this.#game)) {
+        await this._initGame();
+        this._sendMeta();
+      }
+
       this.#rpc.send("live:connected");
+      this._sendMeta();
     });
 
     this.#liveClientApiPing.on("disconnected", () => {
@@ -173,8 +210,26 @@ export class Mary {
     return player;
   }
 
+  // #region Settings Zone
+  private _runSettingsWindow() {
+    this.#settingsWindow = createSettingsWindow();
+    this.#settingsRPC = new MainRPC(this.#settingsWindow);
+    this.#settingsWindow.focus();
+    this.#settingsWindow.addListener("close", () => {
+      this.#settingsWindow = null;
+      this.#settingsRPC = null;
+    });
+  }
+
+
+  // #endregion Settings Zone
+
+
+
+  // #region Cleanup
   public destroy(): void {
     this.#liveClientApiPing.destroy();
     this._resetGame();
   }
+  // #endregion Cleanup
 }

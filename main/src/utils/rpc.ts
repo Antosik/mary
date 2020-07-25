@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import type { BrowserWindow, IpcMainEvent, IpcMainInvokeEvent } from "electron";
+import type { BrowserWindow, IpcMainInvokeEvent } from "electron";
 
 import { ipcMain } from "electron";
 import { EventEmitter } from "events";
@@ -14,56 +14,27 @@ type RPCDataType = void | Promise<void> | IResult<unknown> | Promise<IResult<unk
 
 
 export class MainRPC extends EventEmitter {
-  private _id: string = flowId;
-  private _window: BrowserWindow;
-  private _handlers: Map<string, TRPCHandlerFunc>;
 
-  constructor(window: BrowserWindow) {
-    super();
-
-    this._window = window;
-    this._handlers = new Map<string, TRPCHandlerFunc>();
-
-    this.handleFlow = this.handleFlow.bind(this);       // eslint-disable-line @typescript-eslint/no-unsafe-assignment
-    this.handleInvoke = this.handleInvoke.bind(this);   // eslint-disable-line @typescript-eslint/no-unsafe-assignment
-
-    ipcMain.on(this._id, this.handleFlow);
-    ipcMain.handle(this._id, this.handleInvoke);
+  public static init(): void {
+    ipcMain.handle(MainRPC._id, MainRPC._handleInvoke);
   }
 
-  public get wc(): Electron.WebContents {
-    return this._window.webContents;
-  }
-
-
-  // #region Main
-  public send(event: string, data: RPCDataType = undefined): void {
-    this.wc.send(this._id, { event, data });
-  }
-
-  public setHandler(event: string, handler: TRPCHandlerFunc): void { // eslint-disable-line @typescript-eslint/no-explicit-any
+  public static setHandler(event: string, handler: TRPCHandlerFunc): void { // eslint-disable-line @typescript-eslint/no-explicit-any
     this._handlers.set(event, handler);
   }
 
-  public destroy(): void {
+  public static destroy(): void {
     this._handlers.clear();
 
-    this.removeAllListeners();
-    this.wc.removeAllListeners();
-
-    ipcMain.removeListener(this._id, this.handleFlow);
     ipcMain.removeHandler(this._id);
   }
-  // #endregion
 
+  private static _id: string = flowId;
+  private static _handlers: Map<string, TRPCHandlerFunc> = new Map<string, TRPCHandlerFunc>();
 
   // #region Flow handlers
-  private handleFlow(_: IpcMainEvent, { event, data }: { event: string, data: unknown }): void {
-    super.emit(event, data);
-  }
-
-  private handleInvoke(_: IpcMainInvokeEvent, { event, data }: { event: string, data: unknown[] }): RPCDataType {
-    const handler = this._handlers.get(event);
+  private static _handleInvoke(_: IpcMainInvokeEvent, { event, data }: { event: string, data: unknown[] }): RPCDataType {
+    const handler = MainRPC._handlers.get(event);
 
     if (isNotExists(handler)) {
       logDebug(`Internal: unknown event - ${event}`);
@@ -72,9 +43,39 @@ export class MainRPC extends EventEmitter {
         .setNotification("Внутренняя ошибка приложения");
     }
 
-    return handler(...data);
+    return typeof data === "undefined"
+      ? handler()
+      : handler(...data);
+  }
+  // #endregion
+
+
+  #id: string = flowId;
+  #window: BrowserWindow;
+
+  constructor(window: BrowserWindow) {
+    super();
+
+    this.#window = window;
+  }
+
+  public get wc(): Electron.WebContents {
+    return this.#window.webContents;
+  }
+
+
+  // #region Main
+  public send(event: string, data: RPCDataType = undefined): void {
+    this.wc.send(this.#id, { event, data });
+  }
+
+  public destroy(): void {
+    this.removeAllListeners();
+    this.wc.removeAllListeners();
   }
   // #endregion
 }
+
+MainRPC.init();
 
 export const createMainRPC = (window: BrowserWindow): MainRPC => new MainRPC(window);

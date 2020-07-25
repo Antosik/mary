@@ -139,6 +139,7 @@ export class CooldownCalculator {
       cdr = CooldownCalculator._maxCDRCheck(cdr, player);
     } else if (CooldownCalculator._summonerSpellsTargets.includes(target)) {
 
+      cdr += player.cdr.map.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr += player.cdr.runes.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr += player.cdr.items.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
     }

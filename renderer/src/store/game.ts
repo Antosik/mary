@@ -3,6 +3,7 @@ import { writable } from "svelte/store";
 
 interface IGameStore {
   isLive: boolean;
+  me?: TInternalPlayerStatsNew;
   players: TInternalPlayerStatsNew[];
   playercooldowns: IInternalPlayerCooldownNew[];
   objectcooldowns: IInternalObjectCooldownNew[];
@@ -10,12 +11,13 @@ interface IGameStore {
 
 
 function createGameStore() {
-  const getInitialStore = (): IGameStore => ({ isLive: false, players: [], playercooldowns: [], objectcooldowns: [] });
+  const getInitialStore = (): IGameStore => ({ isLive: false, me: undefined, players: [], playercooldowns: [], objectcooldowns: [] });
 
   // eslint-disable-next-line @typescript-eslint/unbound-method
   const { subscribe, update } = writable<IGameStore>(getInitialStore());
 
   const setLive = (isLive: boolean) => isLive ? update(store => ({ ...store, isLive })) : reset();
+  const setMe = (me: TInternalPlayerStatsNew) => update(store => ({ ...store, me }));
   const setPlayers = (players: TInternalPlayerStatsNew[]) => update(store => ({ ...store, players }));
   const setPlayerCooldowns = (playercooldowns: IInternalPlayerCooldownNew[]) => update(store => ({ ...store, playercooldowns }));
   const setPlayerCooldown = (cooldown: IInternalPlayerCooldownNew) => update(store => {
@@ -45,7 +47,9 @@ function createGameStore() {
     subscribe,
 
     setLive,
+    setMe,
     setPlayers,
+
     setPlayerCooldown,
     setPlayerCooldowns,
     setObjectCooldown,

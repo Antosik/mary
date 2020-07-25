@@ -2,7 +2,7 @@
   import { createEventDispatcher } from "svelte";
   import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
 
-  import TimeCounter from "./TimeCounter.svelte";
+  import TimeCounter from "@mary-web/components/TimeCounter.svelte";
 
   export let summonerSpell: string;
   export let side = "left";

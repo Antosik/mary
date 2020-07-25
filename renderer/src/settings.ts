@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call */
 
-import App from "./client/App.svelte";
+import Settings from "./client/Settings.svelte";
 
-const app = new App({
+const app = new Settings({
   target: document.getElementById("app") ?? document.body
 });
 

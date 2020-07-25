@@ -141,8 +141,18 @@ declare type TInternalGameStatsNew = {
 };
 declare type TInternalGameEventNew = ILiveAPIGameEvent;
 declare interface IInternalGameNew {
+  me: string;
   stats: TInternalGameStatsNew;
   players?: Map<string, IInternalPlayerNew>;
   events?: TInternalGameEventNew[];
   cooldowns?: Map<string, IInternalObjectCooldownNew>;
+}
+declare interface IInternalSettingsNew {
+  overlayLaunch: boolean;
+  overlayKey: string;
+  overlayWindowName: string;
+  showAllyTeam: boolean;
+  showEnemyTeam: boolean;
+  showObjects: boolean;
+  lanAvailability: boolean;
 }

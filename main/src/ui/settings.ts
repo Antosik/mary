@@ -5,16 +5,16 @@ import isDev from "electron-is-dev";
 import { join as joinPath, resolve as resolvePath } from "path";
 
 
-export class MainWindow extends BrowserWindow {
+export class SettingsWindow extends BrowserWindow {
   constructor(options: BrowserWindowConstructorOptions = {}) {
-    const htmlPath = isDev ? resolvePath("target", "index.html") : joinPath(process.resourcesPath, "index.html");
+    const htmlPath = isDev ? resolvePath("target", "settings.html") : joinPath(process.resourcesPath, "settings.html");
     const preloadPath = isDev ? resolvePath("target/renderer", "preload.js") : joinPath(process.resourcesPath, "renderer", "preload.js");
 
     const settings: BrowserWindowConstructorOptions = {
-      title: "Mary",
+      title: "Mary - Settings",
 
-      width: 800,
-      height: 600,
+      width: 500,
+      height: 300,
       minWidth: 350,
       minHeight: 400,
 
@@ -39,4 +39,4 @@ export class MainWindow extends BrowserWindow {
   }
 }
 
-export const createWindow = (options: BrowserWindowConstructorOptions = {}): MainWindow => new MainWindow(options);
+export const createSettingsWindow = (options: BrowserWindowConstructorOptions = {}): SettingsWindow => new SettingsWindow(options);

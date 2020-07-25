@@ -1,6 +1,7 @@
 // Map of MapId to Summoner Spell CDR
 export const SS_MAP_CDR_MAP = new Map<number, number>([
-  [12, -0.1] // Howling Abyss
+  [12, -0.4], // Howling Abyss
+  [21, -0.4] // Nexus Blitz
 ]);
 
 // Map of Inhibitor LaneId to Lane

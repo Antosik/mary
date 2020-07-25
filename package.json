@@ -1,6 +1,6 @@
 {
   "name": "mary",
-  "version": "0.0.1-prerelease.1",
+  "version": "0.0.1-prerelease.2",
   "description": "",
   "main": "target/app/main.js",
   "scripts": {
