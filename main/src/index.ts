@@ -1,17 +1,15 @@
-import { Tray } from "electron";
 import { app } from "electron";
 
-import { Mary } from "./client";
-import { createTrayIcon } from "./ui/tray";
-import { Window } from "./ui/window";
+import { Mary } from "./app/client";
+import { MainWindow } from "./ui/main";
 import { logError } from "./utils/log";
 import "./utils/security";
 
 
 const gotTheLock = app.requestSingleInstanceLock();
 
-let window: Window;
-let trayIcon: Tray;
+let window: MainWindow;
+let mary: Mary;
 
 if (!gotTheLock) {
   app.quit();
@@ -19,18 +17,16 @@ if (!gotTheLock) {
 } else {
 
   app.on("ready", () => {
-    window = new Window();
-    trayIcon = createTrayIcon(window);
-
-    Mary.mount(window);
+    window = new MainWindow();
+    mary = Mary.mount(window);
   });
 
   app.on("window-all-closed", () => {
     // On macOS it is common for applications and their menu bar
     // to stay active until the user quits explicitly with Cmd + Q
     if (process.platform !== "darwin") {
+      mary.destroy();
       app.quit();
-      trayIcon.destroy();
     }
   });
 }

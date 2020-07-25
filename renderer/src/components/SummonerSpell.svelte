@@ -1,18 +1,25 @@
 <script lang="typescript">
   import { createEventDispatcher } from "svelte";
-  import { onMouseLeave } from "../utils/mouseEvents";
-  import { isExists } from "@mary-shared/utils/typeguards";
+  import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
 
   import TimeCounter from "./TimeCounter.svelte";
 
   export let summonerSpell: string;
   export let side = "left";
-  export let cooldown: IInternalCooldown;
+  export let cooldown: IInternalCooldownNew;
 
   const dispatch = createEventDispatcher();
-  const onSpellClick = () => {
-    dispatch("click");
-    onMouseLeave();
+  const onMouseDown = (e: Event) => {
+    const { which, button } = e as MouseEvent;
+
+    if ((which === 3 || button === 2) && isExists(cooldown)) {
+      dispatch("right-click");
+      return;
+    }
+
+    if ((which === 1 || button === 0) && isNotExists(cooldown)) {
+      dispatch("left-click");
+    }
   };
 </script>
 
@@ -42,8 +49,7 @@
   type="button"
   class="spell"
   class:spell--cooldown={isExists(cooldown)}
-  disabled={isExists(cooldown)}
-  on:click={onSpellClick}>
+  on:mousedown={onMouseDown}>
   <span class="spell-icon">
     <img src="./img/spells/{summonerSpell}.png" alt={summonerSpell} />
   </span>
@@ -52,7 +58,7 @@
       class="cooldown-timer"
       class:cooldown-timer--side-left={side === 'left'}
       class:cooldown-timer--side-right={side === 'right'}>
-      <TimeCounter time={cooldown.end} />
+      <TimeCounter end={cooldown.end} />
     </span>
   {/if}
 </button>

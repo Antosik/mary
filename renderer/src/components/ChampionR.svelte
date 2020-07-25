@@ -1,17 +1,24 @@
 <script lang="typescript">
   import { createEventDispatcher } from "svelte";
-  import { onMouseLeave } from "../utils/mouseEvents";
-  import { isExists } from "@mary-shared/utils/typeguards";
+  import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
 
   import TimeCounter from "./TimeCounter.svelte";
 
   export let championName: string;
-  export let cooldown: IInternalCooldown;
+  export let cooldown: IInternalCooldownNew;
 
   const dispatch = createEventDispatcher();
-  const onAbilityClick = () => {
-    dispatch("click");
-    onMouseLeave();
+  const onMouseDown = (e: Event) => {
+    const { which, button } = e as MouseEvent;
+
+    if (which === 3 || button === 2) {
+      dispatch("right-click");
+      return;
+    }
+
+    if (which === 1 || (button === 0 && isNotExists(cooldown))) {
+      dispatch("left-click");
+    }
   };
 </script>
 
@@ -43,8 +50,7 @@
   type="button"
   class="champion-r"
   class:champion-r--cooldown={isExists(cooldown)}
-  disabled={isExists(cooldown)}
-  on:click={onAbilityClick}>
+  on:mousedown={onMouseDown}>
   <span class="champion-r-icon">
     <img
       src="https://cdn.communitydragon.org/latest/champion/{championName}/ability-icon/r"
@@ -52,7 +58,7 @@
   </span>
   {#if isExists(cooldown)}
     <span class="cooldown-timer">
-      <TimeCounter time={cooldown.end} />
+      <TimeCounter end={cooldown.end} />
     </span>
   {/if}
 </button>

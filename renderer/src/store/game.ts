@@ -1,26 +1,55 @@
 import { writable } from "svelte/store";
 
+
 interface IGameStore {
-  players: IInternalPlayerInfo[];
-  cooldowns: IInternalCooldown[];
+  isLive: boolean;
+  players: TInternalPlayerStatsNew[];
+  playercooldowns: IInternalPlayerCooldownNew[];
+  objectcooldowns: IInternalObjectCooldownNew[];
 }
 
+
 function createGameStore() {
-  const getInitialStore = (): IGameStore => ({ players: [], cooldowns: [] });
+  const getInitialStore = (): IGameStore => ({ isLive: false, players: [], playercooldowns: [], objectcooldowns: [] });
 
   // eslint-disable-next-line @typescript-eslint/unbound-method
   const { subscribe, update } = writable<IGameStore>(getInitialStore());
 
-  const setPlayers = (players: IInternalPlayerInfo[]) => update(store => ({ ...store, players }));
-  const setCooldowns = (cooldowns: IInternalCooldown[]) => update(store => ({ ...store, cooldowns }));
+  const setLive = (isLive: boolean) => isLive ? update(store => ({ ...store, isLive })) : reset();
+  const setPlayers = (players: TInternalPlayerStatsNew[]) => update(store => ({ ...store, players }));
+  const setPlayerCooldowns = (playercooldowns: IInternalPlayerCooldownNew[]) => update(store => ({ ...store, playercooldowns }));
+  const setPlayerCooldown = (cooldown: IInternalPlayerCooldownNew) => update(store => {
 
+    const updatedCooldowns: IInternalPlayerCooldownNew[] = store.playercooldowns.filter(cd => cd.id !== cooldown.id);
+
+    if (cooldown.end > new Date()) {
+      updatedCooldowns.push(cooldown);
+    }
+
+    return { ...store, playercooldowns: updatedCooldowns };
+  });
+  const setObjectCooldowns = (objectcooldowns: IInternalObjectCooldownNew[]) => update(store => ({ ...store, objectcooldowns }));
+  const setObjectCooldown = (cooldown: IInternalObjectCooldownNew) => update(store => {
+
+    const updatedCooldowns: IInternalObjectCooldownNew[] = store.objectcooldowns.filter(cd => cd.id !== cooldown.id);
+
+    if (cooldown.end > new Date()) {
+      updatedCooldowns.push(cooldown);
+    }
+
+    return { ...store, objectcooldowns: updatedCooldowns };
+  });
   const reset = () => update(() => getInitialStore());
 
   return {
     subscribe,
 
+    setLive,
     setPlayers,
-    setCooldowns,
+    setPlayerCooldown,
+    setPlayerCooldowns,
+    setObjectCooldown,
+    setObjectCooldowns,
 
     reset
   };

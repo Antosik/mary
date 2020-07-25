@@ -43,6 +43,7 @@ declare interface ILiveAPIPlayerScore {
 }
 
 declare type ILiveAPIPlayerTeam = "ORDER" | "CHAOS";
+declare type ILiveAPIMapLane = "TOP" | "MID" | "BOT";
 
 declare interface ILiveAPIPlayer {
   championName: string;
@@ -61,8 +62,10 @@ declare interface ILiveAPIPlayer {
   team: ILiveAPIPlayerTeam;
 }
 
+// Docs: http://static.developer.riotgames.com/docs/lol/gameModes.json
 declare type ILiveAPIGameMode = "CLASSIC" | "ARAM" | "URF" | "TUTORIAL";
 
+// Docs: http://static.developer.riotgames.com/docs/lol/maps.json
 declare interface ILiveAPIGameStats {
   gameMode: ILiveAPIGameMode;
   gameTime: number;
@@ -97,12 +100,14 @@ declare interface ILiveAPIGameBaseObjectKillEvent<T extends ILiveAPIGameEventObj
   Stolen: "False" | "True";
 }
 
+declare type ILiveAPIDragonType = "Earth" | "Water" | "Fire" | "Air" | "Elder";
+
 declare type ILiveAPIGameStartEvent = ILiveAPIGameBaseEvent<"GameStart">;
 declare type ILiveAPIMinionsSpawningEvent = ILiveAPIGameBaseEvent<"MinionsSpawning">;
 declare type ILiveAPIFirstBrickEvent = ILiveAPIGameBaseKillEvent<"FirstBrick">;
 declare type ILiveAPITurretKilledEvent = ILiveAPIGameBaseKillWithAssistersEvent<"TurretKilled"> & { TurretKilled: string };
 declare type ILiveAPIInhibKilledEvent = ILiveAPIGameBaseKillWithAssistersEvent<"InhibKilled"> & { InhibKilled: string };
-declare type ILiveAPIDragonKillEvent = ILiveAPIGameBaseObjectKillEvent<"DragonKill"> & { DragonType: "Earth" | "Water" | "Fire" | "Air" | "Elder" };
+declare type ILiveAPIDragonKillEvent = ILiveAPIGameBaseObjectKillEvent<"DragonKill"> & { DragonType: ILiveAPIDragonType };
 declare type ILiveAPIHeraldKillEvent = ILiveAPIGameBaseObjectKillEvent<"HeraldKill">;
 declare type ILiveAPIBaronKillEvent = ILiveAPIGameBaseObjectKillEvent<"BaronKill">;
 declare type ILiveAPIChampionKillEvent = ILiveAPIGameBaseKillWithAssistersEvent<"ChampionKill"> & { VictimName: string };

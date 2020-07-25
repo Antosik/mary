@@ -26,9 +26,9 @@ export class ClientRPC extends EventEmitter {
     ipcRenderer.send(this._id, { event, data });
   }
 
-  public async invoke<T>(event: RPCHandlerEventType, ...data: unknown[]): Promise<T | undefined> {
+  public async invoke<T>(event: TRPCHandlerEvent, ...data: unknown[]): Promise<T | undefined> {
     const response = await ipcRenderer.invoke(this._id, { event, data }) as Result<T>;
-    return response?.data;
+    return response?.data; // TODO: Error handling
   }
 
   public destroy(): void {
@@ -40,7 +40,7 @@ export class ClientRPC extends EventEmitter {
 
   // #region Flow handlers
   private handleFlow(_: IpcRendererEvent, { event, data }: { event: string, data: Result<unknown> }): void {
-    super.emit(event, data);
+    super.emit(event, data?.data); // TODO: Error handling
   }
   // #endregion
 }

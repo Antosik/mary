@@ -1,22 +1,15 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import { Agent as httpsAgent } from "https";
-
-import axios from "axios";
 import { EventEmitter } from "events";
 
+import { LiveClientAPI } from "@mary-main/connectors/LiveClientAPI";
 import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
 
 
 export class LiveClientAPIPing extends EventEmitter {
-  private static ENDPOINT = "https://127.0.0.1:2999/liveclientdata";
   private static PING_INTERVAL = 3e3;
-  private _pingTimer?: NodeJS.Timer;
 
-  private _isConnected = false;
-
-  public get isConnected(): boolean {
-    return this._isConnected;
-  }
+  #pingTimer?: NodeJS.Timer;
+  #isConnected = false;
 
   constructor() {
     super();
@@ -26,8 +19,20 @@ export class LiveClientAPIPing extends EventEmitter {
   }
 
 
+  // #region Getters & Setters
+  public get isConnected(): boolean {
+    return this.#isConnected;
+  }
+  // #endregion Getters & Setters
+
+
   // #region Socket
   public async start(): Promise<void> {
+    if (this.#isConnected) {
+      this.emit("reconnected");
+      return;
+    }
+
     await this._ping();
     this._setPingTimer("on");
   }
@@ -40,37 +45,48 @@ export class LiveClientAPIPing extends EventEmitter {
 
   // #region Connect handlers
   private _setPingTimer(mode: "on" | "off"): void {
-    if (isExists(this._pingTimer) && mode === "off") {
-      clearInterval(this._pingTimer);
-      this._pingTimer = undefined;
-    } else if (isNotExists(this._pingTimer) && mode === "on") {
-      this._pingTimer = setInterval(this._ping, LiveClientAPIPing.PING_INTERVAL);
+    if (isExists(this.#pingTimer) && mode === "off") {
+      clearInterval(this.#pingTimer);
+      this.#pingTimer = undefined;
+    } else if (isNotExists(this.#pingTimer) && mode === "on") {
+      this.#pingTimer = setInterval(this._ping, LiveClientAPIPing.PING_INTERVAL);
     }
   }
 
-  private async _pingEndpoint(path: string, eventName: string): Promise<void> {
-    await axios
-      .get(`${LiveClientAPIPing.ENDPOINT}/${path}`, { httpsAgent: new httpsAgent({ rejectUnauthorized: false }) })
-      .then(({ data }) => {
+  private async _ping(): Promise<void> {
+    if (this.#isConnected) {
+      await Promise.all([
+        this._pingEndpoint("players", LiveClientAPI.getPlayersList),
+        this._pingEndpoint("events", LiveClientAPI.getGameEvents),
+      ]);
+    } else {
+      await this._pingEndpoint("game", LiveClientAPI.getGameStats);
+    }
+  }
+
+  private async _pingEndpoint(eventName: string, handler: () => Promise<unknown>): Promise<void> {
+    await handler()
+      .then((data) => {
         if (!this.isConnected) {
-          this.emit("live:connected");
-          this._isConnected = true;
+          this.emit("connected");
+          this.#isConnected = true;
         }
         this.emit(eventName, data);
       })
       .catch(() => {
         if (this.isConnected) {
-          this.emit("live:disconnected");
-          this._isConnected = false;
+          this.emit("disconnected");
+          this.#isConnected = false;
         }
       });
   }
-
-  private async _ping(): Promise<void> {
-    await Promise.all([
-      this._pingEndpoint("playerlist", "live:players"),
-      this._pingEndpoint("eventdata", "live:events"),
-    ]);
-  }
   // #endregion
+
+
+  // #region Cleanup
+  public destroy(): void {
+    this._setPingTimer("off");
+  }
+  // #endregion Cleanup
+
 }

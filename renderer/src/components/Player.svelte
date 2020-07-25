@@ -1,11 +1,6 @@
 <script lang="typescript">
-  import { onMount, onDestroy } from "svelte";
-  import { isExists, isNotEmpty } from "@mary-shared/utils/typeguards";
-  import { rpc } from "@mary-web/data/rpc";
-  import {
-    startListeningToIgnoreMouseEvents,
-    stopListeningToIgnoreMouseEvents,
-  } from "@mary-web/utils/mouseEvents";
+  import { createEventDispatcher } from "svelte";
+  import { isNotEmpty } from "@mary-shared/utils/typeguards";
 
   import SummonerSpell from "./SummonerSpell.svelte";
   import TimeCounter from "./TimeCounter.svelte";
@@ -13,54 +8,47 @@
 
   export let summonerName: string;
   export let championName: string;
-  export let summonerSpells: string[] = [];
+  export let summonerSpells: Set<string> = new Set<string>();
 
   export let team: "ORDER" | "CHAOS";
 
   export let isDead: boolean = false;
   export let respawnTimer: number = 0;
 
+  export let cooldowns: IInternalPlayerCooldownNew[] = [];
+
+  const dispatch = createEventDispatcher();
+
   let respawnTime: Date;
   $: respawnTime = new Date(Date.now() + respawnTimer * 1e3);
 
-  export let cooldowns: IInternalCooldown[] = [];
-
-  function getCooldown(cooldowns: IInternalCooldown[], target: string) {
+  function getCooldown(cooldowns: IInternalPlayerCooldownNew[], target: string) {
     return cooldowns.find((cd) => cd.target === target);
   }
 
-  async function setCooldown(target: string) {
-    const cooldown = await rpc.invoke<IInternalCooldown>(
-      "cooldowns:set",
+  function setCooldown(target: string) {
+    dispatch("cooldown-set", {
       summonerName,
-      championName,
-      target
-    );
-    if (isExists(cooldown)) {
-      cooldowns.push(cooldown);
-    }
+      target,
+    });
+  }
+
+  function resetCooldown(target: string) {
+    dispatch("cooldown-reset", {
+      summonerName,
+      target,
+    });
   }
 
   const onDeadTimerDone = () => (isDead = false);
 
   let player: HTMLDivElement | undefined = undefined;
-
-  onMount(() => {
-    startListeningToIgnoreMouseEvents(player!);
-  });
-  onDestroy(() => {
-    stopListeningToIgnoreMouseEvents(player!);
-  });
 </script>
 
 <style>
   .player {
     display: grid;
     position: relative;
-    opacity: 0.7;
-  }
-  .player:hover {
-    opacity: 1;
   }
 
   .player__name {
@@ -88,13 +76,9 @@
     height: 25px;
     border-radius: 50%;
     overflow: hidden;
-    top: 30px;
-    left: 30px;
     position: absolute;
-  }
-
-  .player--has-cd {
-    opacity: 0.85;
+    top: 30px;
+    z-index: 3;
   }
 
   .player--dead .player__champion:after {
@@ -123,6 +107,9 @@
   .player--team-order .player__name {
     text-align: left;
   }
+  .player--team-order .player__r {
+    left: 30px;
+  }
 
   .player--team-chaos {
     grid-template-areas:
@@ -133,6 +120,10 @@
   }
   .player--team-chaos .player__name {
     text-align: right;
+  }
+  .player--team-chaos .player__r {
+    top: 30px;
+    left: -10px;
   }
 </style>
 
@@ -147,7 +138,7 @@
   <div class="player__champion">
     {#if championName}
       <img
-        src="https://cdn.communitydragon.org/latest/champion/{championName}/square"
+        src="./img/champions/{championName}.png"
         alt={championName} />
     {:else}
       <img
@@ -157,7 +148,7 @@
 
     {#if isDead && respawnTimer > 0}
       <span class="player__respawn-timer absolute-full flex-center">
-        <TimeCounter time={respawnTime} on:completed={onDeadTimerDone} />
+        <TimeCounter end={respawnTime} on:completed={onDeadTimerDone} />
       </span>
     {/if}
 
@@ -165,18 +156,22 @@
       <ChampionR
         {championName}
         cooldown={getCooldown(cooldowns, 'R')}
-        on:click={() => setCooldown('R')} />
+        on:left-click={() => setCooldown('R')}
+        on:right-click={() => resetCooldown('R')} />
     </div>
   </div>
-  <ul class="player__spells">
-    {#each summonerSpells as summonerSpell (summonerSpell)}
-      <li class="player__spells-item">
-        <SummonerSpell
-          {summonerSpell}
-          cooldown={getCooldown(cooldowns, summonerSpell)}
-          side={team === 'ORDER' ? 'left' : 'right'}
-          on:click={() => setCooldown(summonerSpell)} />
-      </li>
-    {/each}
-  </ul>
+  {#if summonerSpells.size}
+    <ul class="player__spells">
+      {#each [...summonerSpells.values()] as summonerSpell, i (summonerSpell)}
+        <li class="player__spells-item">
+          <SummonerSpell
+            {summonerSpell}
+            cooldown={getCooldown(cooldowns, i === 0 ? 'D' : 'F')}
+            side={team === 'ORDER' ? 'left' : 'right'}
+            on:left-click={() => setCooldown(i === 0 ? 'D' : 'F')}
+            on:right-click={() => resetCooldown(i === 0 ? 'D' : 'F')} />
+        </li>
+      {/each}
+    </ul>
+  {/if}
 </div>

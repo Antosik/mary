@@ -1,7 +1,3 @@
-type TResultStatus = "unknown" | "success" | "warning" | "error";
-interface IResult<T> { notification?: string, error?: Error, data?: T, status: TResultStatus }
-
-
 export class Result<T = unknown> implements IResult<T> {
 
   public status: TResultStatus;
