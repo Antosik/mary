@@ -22,6 +22,9 @@
   let respawnTime: Date;
   $: respawnTime = new Date(Date.now() + respawnTimer * 1e3);
 
+  let summonerSpellsArray: string[] = [];
+  $: summonerSpellsArray = [...summonerSpells];
+
   function getCooldown(cooldowns: IInternalPlayerCooldownNew[], target: string) {
     return cooldowns.find((cd) => cd.target === target);
   }
@@ -156,20 +159,20 @@
       <ChampionR
         {championName}
         cooldown={getCooldown(cooldowns, 'R')}
-        on:left-click={() => setCooldown('R')}
-        on:right-click={() => resetCooldown('R')} />
+        on:set={() => setCooldown('R')}
+        on:reset={() => resetCooldown('R')} />
     </div>
   </div>
-  {#if summonerSpells.size}
+  {#if summonerSpellsArray.length}
     <ul class="player__spells">
-      {#each [...summonerSpells.values()] as summonerSpell, i (summonerSpell)}
+      {#each summonerSpellsArray as summonerSpell, i (summonerSpell)}
         <li class="player__spells-item">
           <SummonerSpell
             {summonerSpell}
             cooldown={getCooldown(cooldowns, i === 0 ? 'D' : 'F')}
             side={team === 'ORDER' ? 'left' : 'right'}
-            on:left-click={() => setCooldown(i === 0 ? 'D' : 'F')}
-            on:right-click={() => resetCooldown(i === 0 ? 'D' : 'F')} />
+            on:set={() => setCooldown(i === 0 ? 'D' : 'F')}
+            on:reset={() => resetCooldown(i === 0 ? 'D' : 'F')} />
         </li>
       {/each}
     </ul>

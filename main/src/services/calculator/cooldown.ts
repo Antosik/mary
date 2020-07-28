@@ -127,7 +127,7 @@ export class CooldownCalculator {
         extra_cdr += -0.05 + player.cdr.kills.size * -0.04;
       }
       extra_cdr += player.cdr.dragons.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-
+      
       const extraInitialCooldown = initialCooldown + initialCooldown * extra_cdr;
       return extraInitialCooldown + extraInitialCooldown * cdr;
     }
@@ -137,11 +137,13 @@ export class CooldownCalculator {
       cdr += player.cdr.runes.filter(c => c.target === "Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr += player.cdr.items.filter(c => c.target === "Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr = CooldownCalculator._maxCDRCheck(cdr, player);
+
     } else if (CooldownCalculator._summonerSpellsTargets.includes(target)) {
 
       cdr += player.cdr.map.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr += player.cdr.runes.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr += player.cdr.items.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+
     }
 
     return initialCooldown + initialCooldown * cdr;

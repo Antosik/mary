@@ -6,7 +6,7 @@ export const SS_RUNE_CDR_MAP = new Map<number, number>([
 // Map of ItemID to CDR
 export const ABILITY_RUNE_CDR_MAP = new Map<number, number | ILevelDependantCD>([
   [8300, -0.05],
-  [8200, (level: number) => level >= 10 ? 10 : 0]
+  [8200, (level: number) => level >= 10 ? -10 : 0]
 ]);
 
 export const ULTIMATE_HUNTER_ID = 8100;

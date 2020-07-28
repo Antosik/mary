@@ -6,6 +6,8 @@ import { isNotExists } from "@mary-shared/utils/typeguards";
 
 export class GameEventTransformer {
 
+  private static _neutrals = ["Turret", "Minion", "Unknown", "Dragon"];
+
   public static transformInhibKilledEvent(event: ILiveAPIInhibKilledEvent): TInternalInhibKillEvent {
 
     const [targetRaw, teamRaw, laneRaw] = event.InhibKilled.split("_");
@@ -52,8 +54,10 @@ export class GameEventTransformer {
 
   public static transformChampionKillEvent(event: ILiveAPIChampionKillEvent, game: Game): TInternalChampionKillEvent | undefined {
 
-    if (event.KillerName.includes("Turret")) {
-      return undefined;
+    for (const neutral of GameEventTransformer._neutrals) {
+      if (event.KillerName.includes(neutral)) {
+        return undefined;
+      }
     }
 
     const killerPlayer = game.players.get(event.KillerName);

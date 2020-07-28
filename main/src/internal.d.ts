@@ -22,3 +22,18 @@ declare interface IInternalGameStorage {
   events: ILiveAPIGameEvent[];
   cooldowns: Record<string, TInternalPlayerCooldownsMap>;
 }
+
+declare interface IDestroyable {
+  destroy(): void;
+}
+
+declare interface IMaryOutput {
+  send(container: TMessageContainer): void;
+}
+
+declare module "@polka/send-type" {
+  import { ServerResponse } from "http";
+
+  function send(res: ServerResponse, code: number, data?: any, headers?: any): void;
+  export default send;
+}

@@ -1,8 +1,9 @@
 <script lang="typescript">
+  import type { ClientRPC } from "@mary-web/data/rpc";
   import { onMount } from "svelte";
   import { settingsStore } from "@mary-web/store/settings";
 
-  import { rpc } from "@mary-web/data/rpc";
+  export let rpc: ClientRPC;
 
   const submit = async () => await rpc.invoke("settings:save", $settingsStore);
 
@@ -86,7 +87,6 @@
     checked={$settingsStore.showObjects}
     on:change={(e) => settingsStore.setSetting('showObjects', e.target.checked)} />
 
-  <!--
   <label for="lanAvailability">Enable LAN connections (experimental)</label>
   <input
     type="checkbox"
@@ -94,7 +94,5 @@
     name="lanAvailability"
     checked={$settingsStore.lanAvailability}
     on:change={(e) => settingsStore.setSetting('lanAvailability', e.target.checked)} />
-  -->
-
   <button type="submit" class="submit">Save</button>
 </form>

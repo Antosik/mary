@@ -1,5 +1,6 @@
 import { SMITE_CONST } from "@mary-main/consts/spells";
 
+
 export class PlayerTransformer {
 
   private static _transformChampionName(rawChampionName: string): string {

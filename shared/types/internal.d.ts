@@ -156,3 +156,8 @@ declare interface IInternalSettingsNew {
   showObjects: boolean;
   lanAvailability: boolean;
 }
+
+declare type TMessageContainer<T = unknown> = {
+  event: string;
+  data?: undefined | IResult<T>;
+};

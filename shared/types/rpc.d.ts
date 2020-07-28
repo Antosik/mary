@@ -8,6 +8,7 @@ declare interface IRPCHandlerResponse {
 }
 
 declare type TRPCHandlerFunc<T = unknown> = (...args: any[]) => void | Promise<void> | IResult<T> | Promise<IResult<T>>; // eslint-disable-line @typescript-eslint/no-explicit-any
+declare type RPCDataType = void | Promise<void> | IResult<unknown> | Promise<IResult<unknown>>;
 
 declare type TRPCHandlerLiveEvent = "live:connect" | "live:disconnect";
 declare type TRPCHandlerCooldownEvent = "cooldowns:object:get" | "cooldowns:player:get" | "cooldown:player:set" | "cooldown:player:reset";

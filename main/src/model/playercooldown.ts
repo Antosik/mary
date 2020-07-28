@@ -2,7 +2,7 @@ import { Cooldown } from "@mary-main/model/cooldown";
 import { Events } from "@mary-main/utils/events";
 
 
-export class PlayerCooldown extends Cooldown implements IInternalPlayerCooldownNew {
+export class PlayerCooldown extends Cooldown implements IInternalPlayerCooldownNew, IDestroyable {
 
   public static fromRawValue(rawValue: IInternalPlayerCooldownNew): PlayerCooldown | undefined {
 
@@ -51,8 +51,11 @@ export class PlayerCooldown extends Cooldown implements IInternalPlayerCooldownN
   }
   // #endregion Getters & Setters
 
+
+  // #region Internal
   public reset(): void {
     this.destroy();
     Events.emit("data:cooldown:player", this);
   }
+  // #endregion Internal
 }

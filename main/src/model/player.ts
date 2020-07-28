@@ -5,7 +5,7 @@ import { Events } from "@mary-main/utils/events";
 import { isExists, areSetsNotEqual, isNotEmpty } from "@mary-shared/utils/typeguards";
 
 
-export class Player implements IInternalPlayerNew {
+export class Player implements IInternalPlayerNew, IDestroyable {
 
   #stats: TInternalPlayerStatsNew;
   #cooldowns: Map<TInternalCooldownTargetNew, PlayerCooldown>;
@@ -100,10 +100,16 @@ export class Player implements IInternalPlayerNew {
   }
   // #endregion Custom Getters & Setters
 
+
+  // #region Internal
   private _onStatsChange(oldStats: TInternalPlayerStatsNew, newStats: TInternalPlayerStatsNew): void {
 
     if (oldStats.isDead !== newStats.isDead) {
       Events.emit("data:player:dead", this);
+    }
+
+    if (areSetsNotEqual(oldStats.runes, newStats.runes)) {
+      this._calculateCDRFromRunes(newStats);
     }
 
     if (areSetsNotEqual(oldStats.items, newStats.items)) {
@@ -118,6 +124,7 @@ export class Player implements IInternalPlayerNew {
   private _calculateCDRFromRunes(stats: TInternalPlayerStatsNew) {
     this.#cdr.runes = CDRCalculator.calculateCDRFromRunes(stats);
   }
+  // #endregion Internal
 
 
   // #region Cooldown zone
@@ -145,7 +152,12 @@ export class Player implements IInternalPlayerNew {
   }
 
   public removeCooldown(target: TInternalCooldownTargetNew): void {
-    this.#cooldowns.delete(target);
+    const existingCooldown = this.#cooldowns.get(target);
+
+    if (isExists(existingCooldown)) {
+      existingCooldown.destroy();
+      this.#cooldowns.delete(target);
+    }
   }
   // #endregion Cooldown zone
 

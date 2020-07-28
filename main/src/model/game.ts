@@ -7,7 +7,7 @@ import { PlayerTransformer } from "@mary-main/services/transform/player";
 import { isNotExists, isEmpty, isNotEmpty, isExists } from "@mary-shared/utils/typeguards";
 
 
-export class Game implements IInternalGameNew {
+export class Game implements IInternalGameNew, IDestroyable {
 
   public static isTheSameGames(first: Game, second: Game): boolean {
     if (isNotExists(first.stats) || isNotExists(second.stats)) {

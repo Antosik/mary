@@ -1,8 +1,10 @@
 import { Configuration, DefinePlugin } from "webpack";
 
 import CopyWebpackPlugin from "copy-webpack-plugin";
+import MiniCssExtractPlugin from "mini-css-extract-plugin";
 import { join as joinPath } from "path";
 import TerserPlugin from "terser-webpack-plugin";
+import { IgnorePlugin } from "webpack";
 
 import { alias } from "../webpack.config";
 import { version } from "../package.json";
@@ -12,42 +14,25 @@ const nodeEnv = process.env.NODE_ENV ?? "development";
 const isProduction = nodeEnv === "production";
 
 
-const config: Configuration = {
-  name: "mary-app",
-  target: "electron-main",
-
-  mode: "none",
+const config: Configuration = ({
+  mode: isProduction ? "production" : "development",
   devtool: isProduction ? "hidden-source-map" : "cheap-module-source-map",
 
   resolve: {
-    extensions: [".js", ".ts"],
+    extensions: [".mjs", ".js", ".ts", ".svelte", ".html"],
     alias
   },
-  entry: joinPath(__dirname, "src/index.ts"),
-  output: {
-    path: joinPath(__dirname, "..", "target/app"),
-    filename: "main.js"
+
+  entry: {
+    main: joinPath(__dirname, "src/index.ts"),
+    internal: joinPath(__dirname, "src/internal.ts"),
+    settings: joinPath(__dirname, "src/settings.ts"),
+    preload: joinPath(__dirname, "src/preload.ts")
   },
 
-  module: {
-    rules: [
-      {
-        test: /\.mjs$/,
-        include: /node_modules/,
-        type: "javascript/auto"
-      },
-      {
-        test: /\.ts$/,
-        use: [
-          {
-            loader: "ts-loader",
-            options: {
-              transpileOnly: true
-            }
-          }
-        ]
-      }
-    ]
+  output: {
+    path: joinPath(__dirname, "..", "target/renderer"),
+    filename: "[name].js"
   },
 
   plugins: [
@@ -55,14 +40,20 @@ const config: Configuration = {
       VERSION: JSON.stringify(version)
     }),
 
+    new IgnorePlugin(/.*\.js.map$/i),
+
     new CopyWebpackPlugin({
       patterns: [
         {
           from: joinPath(__dirname, "static"),
-          to: joinPath(__dirname, "..", "target")
+          to: joinPath(__dirname, "..", "target"),
         }
       ]
     }),
+
+    new MiniCssExtractPlugin({
+      filename: "../css/[name].css"
+    })
   ],
 
   optimization: {
@@ -76,6 +67,6 @@ const config: Configuration = {
       },
     })]
   },
-}
+});
 
 export default config;

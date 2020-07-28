@@ -1,6 +1,7 @@
 import { ABILITY_ITEM_CDR_MAP, ABILITY_ITEM_CDR_MAP_HASTE, SS_ITEM_CDR_MAP } from "@mary-main/consts/items";
 import { SS_MAP_CDR_MAP } from "@mary-main/consts/maps";
 import { isExists } from "@mary-shared/utils/typeguards";
+import { SS_RUNE_CDR_MAP, ABILITY_RUNE_CDR_MAP } from "@mary-main/consts/runes";
 
 
 export class CDRCalculator {
@@ -49,15 +50,20 @@ export class CDRCalculator {
 
     for (const rune of newStats.runes) {
 
-      const ssCDR = SS_ITEM_CDR_MAP.get(rune);
+      const ssCDR = SS_RUNE_CDR_MAP.get(rune);
       if (isExists(ssCDR)) {
         ssRunes.push({ ...CDRCalculator._constructCDRItem(rune, "Summoner Spell", ssCDR) });
       }
 
-      const abilityCDR = ABILITY_ITEM_CDR_MAP.get(rune);
+      const abilityCDR = ABILITY_RUNE_CDR_MAP.get(rune);
       if (isExists(abilityCDR)) {
-        abilityRunes.push({ ...CDRCalculator._constructCDRItem(rune, "Ability", abilityCDR) });
-        abilityRunes.push({ ...CDRCalculator._constructCDRItem(rune, "Ultimate Ability", abilityCDR) });
+
+        const abilityCDRRune = typeof abilityCDR === "function"
+          ? abilityCDR(newStats.level)
+          : abilityCDR;
+
+        abilityRunes.push({ ...CDRCalculator._constructCDRItem(rune, "Ability", abilityCDRRune) });
+        abilityRunes.push({ ...CDRCalculator._constructCDRItem(rune, "Ultimate Ability", abilityCDRRune) });
       }
     }
 

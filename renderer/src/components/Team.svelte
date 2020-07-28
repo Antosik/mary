@@ -1,5 +1,4 @@
 <script lang="typescript">
-  export let team: "ORDER" | "CHAOS";
   export let players: TInternalPlayerStatsNew[] = [];
 </script>
 

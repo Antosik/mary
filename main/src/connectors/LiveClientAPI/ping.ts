@@ -5,19 +5,11 @@ import { LiveClientAPI } from "@mary-main/connectors/LiveClientAPI";
 import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
 
 
-export class LiveClientAPIPing extends EventEmitter {
+export class LiveClientAPIPing extends EventEmitter implements IDestroyable {
   private static PING_INTERVAL = 3e3;
 
   #pingTimer?: NodeJS.Timer;
   #isConnected = false;
-
-  constructor() {
-    super();
-
-    /* eslint-disable-next-line @typescript-eslint/no-unsafe-assignment */
-    this._ping = this._ping.bind(this);
-  }
-
 
   // #region Getters & Setters
   public get isConnected(): boolean {
@@ -53,7 +45,7 @@ export class LiveClientAPIPing extends EventEmitter {
     }
   }
 
-  private async _ping(): Promise<void> {
+  private _ping = async (): Promise<void> => {
     if (this.#isConnected) {
       await Promise.all([
         this._pingEndpoint("players", LiveClientAPI.getPlayersList),
@@ -62,7 +54,7 @@ export class LiveClientAPIPing extends EventEmitter {
     } else {
       await this._pingEndpoint("game", LiveClientAPI.getGameStats);
     }
-  }
+  };
 
   private async _pingEndpoint(eventName: string, handler: () => Promise<unknown>): Promise<void> {
     await handler()
@@ -88,5 +80,4 @@ export class LiveClientAPIPing extends EventEmitter {
     this._setPingTimer("off");
   }
   // #endregion Cleanup
-
 }

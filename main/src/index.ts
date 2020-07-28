@@ -1,35 +1,31 @@
 import { app } from "electron";
 
-import { Mary } from "./app/client";
-import { MainWindow } from "./ui/main";
+import { Mary } from "./app/mary";
 import { logError } from "./utils/log";
 import "./utils/security";
 
 
-const gotTheLock = app.requestSingleInstanceLock();
+if (!app.requestSingleInstanceLock()) {
+  app.exit();
+}
 
-let window: MainWindow;
 let mary: Mary;
 
-if (!gotTheLock) {
-  app.quit();
+app.on("ready", () => {
+  mary = Mary.launch();
+});
 
-} else {
+app.on("before-quit", () => {
+  // On macOS it is common for applications and their menu bar
+  // to stay active until the user quits explicitly with Cmd + Q
+  if (process.platform !== "darwin") {
+    mary.destroy();
+  }
+});
 
-  app.on("ready", () => {
-    window = new MainWindow();
-    mary = Mary.mount(window);
-  });
-
-  app.on("window-all-closed", () => {
-    // On macOS it is common for applications and their menu bar
-    // to stay active until the user quits explicitly with Cmd + Q
-    if (process.platform !== "darwin") {
-      mary.destroy();
-      app.quit();
-    }
-  });
-}
+app.on("window-all-closed", (e: Event) => {
+  e.preventDefault();
+});
 
 process.on("uncaughtException", (error) => {
   logError("[UNCAUGHT]: ", error);

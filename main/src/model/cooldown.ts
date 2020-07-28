@@ -1,4 +1,4 @@
-export class Cooldown implements IInternalCooldownNew {
+export class Cooldown implements IInternalCooldownNew, IDestroyable {
 
   private static INTERVAL_SIZE = 5e3;
 
@@ -18,9 +18,8 @@ export class Cooldown implements IInternalCooldownNew {
 
     this.#handler = handler;
 
-    this._pingAfterTimeout = this._pingAfterTimeout.bind(this); // eslint-disable-line @typescript-eslint/no-unsafe-assignment
     this.#intervalTimer = setInterval(
-      this._pingAfterTimeout,                                   // eslint-disable-line @typescript-eslint/unbound-method
+      this._pingAfterTimeout,
       Cooldown.INTERVAL_SIZE
     );
   }
@@ -45,16 +44,19 @@ export class Cooldown implements IInternalCooldownNew {
   // #endregion Getters & Setters
 
 
-  protected _pingAfterTimeout(): void {
+  // #region Internal
+  protected _pingAfterTimeout = (): void => {
     if (new Date() >= this.#end) {
       this.updateTime();
     }
     this.#handler();
-  }
+  };
 
   public updateTime(): void {
     this.#end = new Date(0);
   }
+  // #endregion Internal
+
 
   // #region Cleanup
   public destroy(): void {

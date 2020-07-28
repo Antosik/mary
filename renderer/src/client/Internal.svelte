@@ -1,10 +1,9 @@
 <script lang="typescript">
-  import type { ClientRPC } from "@mary-web/data/rpc";
-
   import { onMount, onDestroy } from "svelte";
   import { groupByTeam } from "@mary-shared/utils/summoner";
   import { isNotEmpty, isExists } from "@mary-shared/utils/typeguards";
 
+  import { rpc } from "@mary-web/data/ws";
   import { gameStore } from "@mary-web/store/game";
   import { settingsStore } from "@mary-web/store/settings";
 
@@ -12,14 +11,20 @@
   import Player from "@mary-web/components/Player.svelte";
   import GameObject from "@mary-web/components/GameObject.svelte";
 
-  export let rpc: ClientRPC;
-
-  const onMe = gameStore.setMe;
-  const onPlayers = gameStore.setPlayers;
-  const onPlayerCooldownGet = gameStore.setPlayerCooldown;
-  const onObjectCooldownGet = gameStore.setObjectCooldown;
-  const onSettingsUpdated = (data: IInternalSettingsNew) => {
-    settingsStore.setSettings(data);
+  const onMe = (e: Event) => {
+    gameStore.setMe((e as CustomEvent).detail as TInternalPlayerStatsNew);
+  }
+  const onPlayers = (e: Event) => {
+    gameStore.setPlayers((e as CustomEvent).detail as TInternalPlayerStatsNew[]);
+  }
+  const onPlayerCooldownGet = (e: Event) => {
+    gameStore.setPlayerCooldown((e as CustomEvent).detail as IInternalPlayerCooldownNew);
+  }
+  const onObjectCooldownGet = (e: Event) => {
+    gameStore.setObjectCooldown((e as CustomEvent).detail as IInternalObjectCooldownNew);
+  }
+  const onSettingsUpdated = (e: Event) => {
+    settingsStore.setSettings((e as CustomEvent).detail as IInternalSettingsNew);
   };
 
   const onConnected = async () => {
@@ -55,15 +60,12 @@
   let objectCooldowns: Record<string, IInternalObjectCooldownNew[]>;
   $: objectCooldowns = groupByTeam($gameStore.objectcooldowns);
 
+  
   let showOrderTeam: boolean;
   let showChaosTeam: boolean;
-  $: showOrderTeam =
-    ($gameStore.me?.team === "ORDER" && $settingsStore.showAllyTeam) ||
-    ($gameStore.me?.team === "CHAOS" && $settingsStore.showEnemyTeam);
-  $: showChaosTeam =
-    ($gameStore.me?.team === "CHAOS" && $settingsStore.showAllyTeam) ||
-    ($gameStore.me?.team === "ORDER" && $settingsStore.showEnemyTeam);
-
+  $: showOrderTeam = ($gameStore.me?.team === "ORDER" && $settingsStore.showAllyTeam) || ($gameStore.me?.team === "CHAOS" && $settingsStore.showEnemyTeam);
+  $: showChaosTeam = ($gameStore.me?.team === "CHAOS" && $settingsStore.showAllyTeam) || ($gameStore.me?.team === "ORDER" && $settingsStore.showEnemyTeam);
+  
   function getPlayerCooldowns(
     player: IInternalPlayerInfo
   ): IInternalCooldownNew[] {
@@ -73,26 +75,26 @@
   }
 
   onMount(async () => {
-    rpc.addListener("settings:updated", onSettingsUpdated);
-    rpc.addListener("live:connected", onConnected);
-    rpc.addListener("live:me", onMe);
-    rpc.addListener("live:players", onPlayers);
-    rpc.addListener("live:disconnected", onDisconnected);
-    rpc.addListener("cooldown:player:ping", onPlayerCooldownGet);
-    rpc.addListener("cooldown:object:ping", onObjectCooldownGet);
+    rpc.addEventListener("settings:updated", onSettingsUpdated);
+    rpc.addEventListener("live:connected", onConnected);
+    rpc.addEventListener("live:me", onMe);
+    rpc.addEventListener("live:players", onPlayers);
+    rpc.addEventListener("live:disconnected", onDisconnected);
+    rpc.addEventListener("cooldown:player:ping", onPlayerCooldownGet);
+    rpc.addEventListener("cooldown:object:ping", onObjectCooldownGet);
 
     settingsStore.setSettings(await rpc.invoke("settings:load"));
     rpc.send("live:connect");
   });
 
   onDestroy(() => {
-    rpc.removeListener("settings:updated", onSettingsUpdated);
-    rpc.removeListener("live:connected", onConnected);
-    rpc.removeListener("live:me", onMe);
-    rpc.removeListener("live:players", onPlayers);
-    rpc.removeListener("live:disconnected", onDisconnected);
-    rpc.removeListener("cooldown:player:ping", onPlayerCooldownGet);
-    rpc.removeListener("cooldown:object:ping", onObjectCooldownGet);
+    rpc.removeEventListener("settings:updated", onSettingsUpdated);
+    rpc.removeEventListener("live:connected", onConnected);
+    rpc.removeEventListener("live:me", onMe);
+    rpc.removeEventListener("live:players", onPlayers);
+    rpc.removeEventListener("live:disconnected", onDisconnected);
+    rpc.removeEventListener("cooldown:player:ping", onPlayerCooldownGet);
+    rpc.removeEventListener("cooldown:object:ping", onObjectCooldownGet);
   });
 </script>
 

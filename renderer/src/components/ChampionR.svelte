@@ -1,6 +1,6 @@
 <script lang="typescript">
   import { createEventDispatcher } from "svelte";
-  import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
+  import { isExists } from "@mary-shared/utils/typeguards";
 
   import TimeCounter from "@mary-web/components/TimeCounter.svelte";
 
@@ -8,18 +8,8 @@
   export let cooldown: IInternalCooldownNew;
 
   const dispatch = createEventDispatcher();
-  const onMouseDown = (e: Event) => {
-    const { which, button } = e as MouseEvent;
-
-    if (which === 3 || button === 2) {
-      dispatch("right-click");
-      return;
-    }
-
-    if (which === 1 || (button === 0 && isNotExists(cooldown))) {
-      dispatch("left-click");
-    }
-  };
+  const onClick = () => dispatch("set");
+  const onDoubleClick = () => dispatch("reset");
 </script>
 
 <style>
@@ -50,7 +40,8 @@
   type="button"
   class="champion-r"
   class:champion-r--cooldown={isExists(cooldown)}
-  on:mousedown={onMouseDown}>
+  on:click={onClick}
+  on:dblclick={onDoubleClick}>
   <span class="champion-r-icon">
     <img
       src="https://cdn.communitydragon.org/latest/champion/{championName}/ability-icon/r"

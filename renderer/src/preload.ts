@@ -1,6 +1,5 @@
 import { ipcRenderer, remote } from "electron";
 import { isExists } from "@mary-shared/utils/typeguards";
-import { flowId } from "@mary-shared/utils/rpc";
 
 const win = remote.getCurrentWindow();
 
@@ -22,7 +21,7 @@ function handleWindowControls() {
   const settingsButton = document.getElementById("settings-button");
   if (isExists(settingsButton)) {
     settingsButton.addEventListener("click", async () => {
-      await ipcRenderer.invoke(flowId, { event: "settings:open", data: undefined });
+      await ipcRenderer.invoke("main", { event: "settings:open", data: undefined });
     });
   }
 
