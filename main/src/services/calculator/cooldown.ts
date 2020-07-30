@@ -1,7 +1,7 @@
 import type { Player } from "@mary-main/model/player";
 
 import { ULTIMATE_HUNTER_ID, COSMIC_INSIGHT_ID } from "@mary-main/consts/runes";
-import { spells } from "@mary-main/consts/spells";
+import { spells, TELEPORT_CONST } from "@mary-main/consts/spells";
 import ultimateAbilityData from "@mary-main/consts/ultimate.json";
 import { isBlank, isNotExists, isEmpty } from "@mary-shared/utils/typeguards";
 
@@ -50,16 +50,21 @@ export class CooldownCalculator {
     return 0;
   }
 
-  private static _getInitialSummonerSpellCooldown(target: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): number {
+  private static _getSummonerSpellInfo(target: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): ISpellInfo | undefined {
 
     const [D, F] = stats.summonerSpells.values();
     const summonerSpell: string = target === "D" ? D : F;
 
     if (isBlank(summonerSpell)) {
-      return 0;
+      return;
     }
 
-    const summonerSpellInfo = spells.find(spell => spell.id === summonerSpell);
+    return spells.find(spell => spell.id === summonerSpell);
+  }
+
+  private static _getInitialSummonerSpellCooldown(target: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): number {
+
+    const summonerSpellInfo = CooldownCalculator._getSummonerSpellInfo(target, stats);
 
     if (isNotExists(summonerSpellInfo)) {
       return 0;
@@ -127,7 +132,7 @@ export class CooldownCalculator {
         extra_cdr += -0.05 + player.cdr.kills.size * -0.04;
       }
       extra_cdr += player.cdr.dragons.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-      
+
       const extraInitialCooldown = initialCooldown + initialCooldown * extra_cdr;
       return extraInitialCooldown + extraInitialCooldown * cdr;
     }
@@ -140,10 +145,14 @@ export class CooldownCalculator {
 
     } else if (CooldownCalculator._summonerSpellsTargets.includes(target)) {
 
+      const summonerSpellInfo = CooldownCalculator._getSummonerSpellInfo(target, player.stats);
+      if (summonerSpellInfo?.name === TELEPORT_CONST) {
+        return initialCooldown;
+      }
+
       cdr += player.cdr.map.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr += player.cdr.runes.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
       cdr += player.cdr.items.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-
     }
 
     return initialCooldown + initialCooldown * cdr;

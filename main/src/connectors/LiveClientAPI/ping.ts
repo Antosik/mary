@@ -49,15 +49,15 @@ export class LiveClientAPIPing extends EventEmitter implements IDestroyable {
     if (this.#isConnected) {
       await Promise.all([
         this._pingEndpoint("players", LiveClientAPI.getPlayersList),
-        this._pingEndpoint("events", LiveClientAPI.getGameEvents),
+        this._pingEndpoint("events", LiveClientAPI.getGameEvents)
       ]);
     } else {
       await this._pingEndpoint("game", LiveClientAPI.getGameStats);
     }
   };
 
-  private async _pingEndpoint(eventName: string, handler: () => Promise<unknown>): Promise<void> {
-    await handler()
+  private async _pingEndpoint(eventName: string, handler: (retryCount: number) => Promise<unknown>): Promise<void> {
+    return handler(0)
       .then((data) => {
         if (!this.isConnected) {
           this.emit("connected");

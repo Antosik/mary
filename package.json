@@ -1,6 +1,6 @@
 {
   "name": "mary",
-  "version": "0.0.1-prerelease.3",
+  "version": "0.0.1-prerelease.4",
   "description": "",
   "main": "target/app/main.js",
   "scripts": {
@@ -78,10 +78,13 @@
     "date-fns": "^2.15.0",
     "electron-is-dev": "^1.2.0",
     "electron-log": "^4.2.2",
+    "electron-overlay-window": "^1.0.2",
     "electron-store": "^6.0.0",
     "electron-updater": "^4.3.1",
+    "node-loader": "^1.0.1",
     "polka": "^0.5.2",
     "sirv": "^1.0.1",
+    "uiohook-napi": "^1.0.7",
     "ws": "^7.3.1"
   }
 }

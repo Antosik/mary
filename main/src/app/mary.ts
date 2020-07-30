@@ -1,9 +1,10 @@
-import type { MenuItemConstructorOptions, MenuItem } from "electron";
+import { MenuItemConstructorOptions, MenuItem, dialog } from "electron";
 
 import { app, shell } from "electron";
 
 import { MaryInternal } from "@mary-main/app/internal";
 import { MaryClient } from "@mary-main/app/output/client";
+import { MaryOverlay } from "@mary-main/app/output/overlay";
 import { MarySettings } from "@mary-main/app/output/settings";
 import { MaryServer } from "@mary-main/app/output/server";
 import { settingsStore } from "@mary-main/storage/settings";
@@ -20,6 +21,7 @@ export class Mary extends MaryInternal implements IDestroyable {
   #main: MaryClient | null;
   #settings: MarySettings | null;
   #server: MaryServer | null;
+  #overlay: MaryOverlay | null;
 
   public static launch(): Mary {
     return new this();
@@ -31,9 +33,13 @@ export class Mary extends MaryInternal implements IDestroyable {
     this.#main = null;
     this.#settings = null;
     this.#server = null;
+    this.#overlay = null;
 
+    if (settingsStore.get("overlayLaunch")) {
+      this.#overlay = this._initOverlay(settingsStore.store);
+    }
 
-    if (settingsStore.get("lanAvailability") === true) {
+    if (settingsStore.get("lanAvailability")) {
       this.#server = this._initServer();
       this.#server.start();
     }
@@ -56,6 +62,7 @@ export class Mary extends MaryInternal implements IDestroyable {
     Events.addListener("mary:send", this._onEventsMarySend);
     return this;
   }
+  // #endregion Events handling
 
 
   // #region Output handlers
@@ -93,16 +100,64 @@ export class Mary extends MaryInternal implements IDestroyable {
     return Result.create(settingsStore.store, "success");
   };
 
+  private _acceptedRestartDialog(): boolean {
+
+    const response = dialog.showMessageBoxSync({
+      buttons: ["OK", "Cancel"],
+      message: "Critical changes - App will be restarted. \nProceed?"
+    });
+    return response === 0;
+  }
+
   private _onSettingsSave = (data: IInternalSettingsNew) => {   // "settings:save"
+
+    const oldSettings = settingsStore.store;
     settingsStore.set(data);
+
+    if (
+      this._isRestartAfterSettingsSetNeeded(oldSettings, settingsStore.store)
+      && this._acceptedRestartDialog()
+    ) {
+      app.relaunch();
+      app.exit(0);
+      return;
+    }
 
     const msg: TMessageContainer = {
       event: "settings:updated",
       data: Result.create(data, "success")
     };
 
-    this._sendToOutput(this.#main, msg);
-    this._sendToOutput(this.#server, msg);
+    this._sendToOutputs(msg);
+    this.#settings?.window.close();
+  };
+
+  private _onServerIp = (ip: string[]) => {     // "server:ip"
+    this.#tray.destroy();
+
+    this.#tray = new MaryTray(this._getTrayMenuItems(ip));
+    this._handleTrayEvents();
+  };
+
+  private _onOverlayActiveChange = (isActive: boolean) => { // "overlay:active-change"
+    if (isNotExists(this.#overlay)) {
+      return;
+    }
+
+    const msg: TMessageContainer = {
+      event: "overlay:active-change",
+      data: Result.create(isActive, "success")
+    };
+
+    this._sendToOutput(this.#overlay, msg);
+  };
+
+  private _onOverlayHide = () => { // "overlay:hide"
+    if (isNotExists(this.#overlay)) {
+      return;
+    }
+
+    this.#overlay.hideOverlay();
   };
   // #endregion Output handlers
 
@@ -112,7 +167,7 @@ export class Mary extends MaryInternal implements IDestroyable {
 
     if (isNotExists(this.#main)) {
       this.#main = MaryClient.launch();
-      this.#main.window.on("close", () => {
+      this.#main.window.on("closed", () => {
         const temp = this.#main;
         this.#main = null;
         temp?.destroy();
@@ -134,7 +189,7 @@ export class Mary extends MaryInternal implements IDestroyable {
   private _openSettingsWindow(): void {
     if (isNotExists(this.#settings)) {
       this.#settings = MarySettings.launch();
-      this.#settings.window.on("close", () => {
+      this.#settings.window.on("closed", () => {
         const temp = this.#settings;
         this.#settings = null;
         temp?.destroy();
@@ -151,7 +206,7 @@ export class Mary extends MaryInternal implements IDestroyable {
 
     const server = new MaryServer();
 
-    server.events.on("server:ip", this._updateTrayMenu);
+    server.events.on("server:ip", this._onServerIp);
     server.events.on("live:connect", this._onLiveConnect);
     server.events.setHandler("cooldowns:object:get", this._onCooldownsObjectGet);
     server.events.setHandler("cooldowns:player:get", this._onCooldownsPlayerGet);
@@ -162,13 +217,29 @@ export class Mary extends MaryInternal implements IDestroyable {
 
     return server;
   }
+
+  private _initOverlay(settings: TOverlaySettings): MaryOverlay {
+
+    const overlay = MaryOverlay.launch(settings);
+
+    overlay.events.on("live:connect", this._onLiveConnect);
+    overlay.events.on("overlay:active-change", this._onOverlayActiveChange);
+    overlay.events.setHandler("overlay:hide", this._onOverlayHide);
+    overlay.events.setHandler("cooldowns:object:get", this._onCooldownsObjectGet);
+    overlay.events.setHandler("cooldowns:player:get", this._onCooldownsPlayerGet);
+    overlay.events.setHandler("cooldown:player:set", this._onCooldownsPlayerSet);
+    overlay.events.setHandler("cooldown:player:reset", this._onCooldownsPlayerReset);
+    overlay.events.setHandler("settings:open", this._onSettingsOpen);
+    overlay.events.setHandler("settings:load", this._onSettingsLoad);
+
+    return overlay;
+  }
   // #endregion Window init
 
 
   // #region Internal Mary Events handlers
   private _onEventsMarySend = (msg: TMessageContainer | TMessageContainer[]): void => {
-    this._sendToOutput(this.#main, msg);
-    this._sendToOutput(this.#server, msg);
+    this._sendToOutputs(msg);
   };
   // #endregion Internal Mary Events handlers
 
@@ -214,6 +285,12 @@ export class Mary extends MaryInternal implements IDestroyable {
     app.quit();
   }
 
+  private _sendToOutputs(container: TMessageContainer | TMessageContainer[]): void {
+    if (isExists(this.#overlay)) { this._sendToOutput(this.#overlay, container); }
+    if (isExists(this.#main)) { this._sendToOutput(this.#main, container); }
+    if (isExists(this.#server)) { this._sendToOutput(this.#server, container); }
+  }
+
   private _sendToOutput(output: IMaryOutput | null, container: TMessageContainer | TMessageContainer[]): void {
     if (isNotExists(output)) {
       return;
@@ -228,12 +305,11 @@ export class Mary extends MaryInternal implements IDestroyable {
     }
   }
 
-  private _updateTrayMenu = (ip: string[]) => {
-    this.#tray.destroy();
-
-    this.#tray = new MaryTray(this._getTrayMenuItems(ip));
-    this._handleTrayEvents();
-  };
+  private _isRestartAfterSettingsSetNeeded(oldSettings: Partial<IInternalSettingsNew>, newSettings: Partial<IInternalSettingsNew>): boolean {
+    return oldSettings.overlayWindowName !== newSettings.overlayWindowName
+      || oldSettings.lanAvailability !== newSettings.lanAvailability
+      || oldSettings.overlayLaunch !== newSettings.overlayLaunch;
+  }
   // #endregion Utils
 
 
@@ -243,6 +319,7 @@ export class Mary extends MaryInternal implements IDestroyable {
     super.destroy();
     this.#tray.destroy();
 
+    if (isExists(this.#overlay)) { this.#overlay.destroy(); this.#overlay = null; }
     if (isExists(this.#main)) { this.#main.destroy(); this.#main = null; }
     if (isExists(this.#server)) { this.#server.destroy(); this.#server = null; }
     if (isExists(this.#settings)) { this.#settings.destroy(); this.#settings = null; }

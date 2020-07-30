@@ -1,7 +1,10 @@
 <script lang="typescript">
   import type { ClientRPC } from "@mary-web/data/rpc";
+  
   import { onMount } from "svelte";
+
   import { settingsStore } from "@mary-web/store/settings";
+  import KeyInput from "@mary-web/components/KeyInput.svelte";
 
   export let rpc: ClientRPC;
 
@@ -34,7 +37,6 @@
 </style>
 
 <form on:submit|preventDefault={submit}>
-  <!--
   <label for="overlayLaunch">Enable overlay</label>
   <input
     type="checkbox"
@@ -47,11 +49,9 @@
     <div class="note">Overlay doesn't work in Fullscreen mode!</div>
 
     <label for="overlayKey">Keys</label>
-    <input
-      type="text"
-      id="overlayKey"
-      name="overlayKey"
-      value={$settingsStore.overlayKey} />
+    <KeyInput
+      value={$settingsStore.overlayKey}
+      on:change={(e) => settingsStore.setSetting('overlayKey', e.detail)} />
 
     <label for="overlayWindowName">Window Name</label>
     <input
@@ -61,7 +61,6 @@
       value={$settingsStore.overlayWindowName}
       on:change={(e) => settingsStore.setSetting('overlayWindowName', e.target.value)} />
   {/if}
-  -->
 
   <label for="showAllyTeam">Show ally team cooldowns</label>
   <input

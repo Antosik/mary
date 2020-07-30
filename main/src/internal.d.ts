@@ -31,6 +31,11 @@ declare interface IMaryOutput {
   send(container: TMessageContainer): void;
 }
 
+declare type TOverlaySettings = {
+  overlayKey?: string;
+  overlayWindowName?: string;
+};
+
 declare module "@polka/send-type" {
   import { ServerResponse } from "http";
 

@@ -22,6 +22,7 @@ const config: Configuration = ({
   entry: {
     main: joinPath(__dirname, "src/index.ts"),
     settings: joinPath(__dirname, "src/settings.ts"),
+    overlay: joinPath(__dirname, "src/overlay.ts"),
     preload: joinPath(__dirname, "src/preload.ts")
   },
 

@@ -13,3 +13,4 @@ export const spells: ISpellInfo[] = [
 ];
 
 export const SMITE_CONST = "SummonerSmite";
+export const TELEPORT_CONST = "SummonerTeleport";

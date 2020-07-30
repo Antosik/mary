@@ -24,10 +24,12 @@ export class ClientRPC extends EventEmitter {
 
   // #region Main
   public send(event: TRPCHandlerEvent, ...data: unknown[]): void {
+    console.log(event, data);
     return ipcRenderer.send(this.#id, { event, data });// TODO: Error handling
   }
 
   public async invoke<T>(event: TRPCHandlerEvent, ...data: unknown[]): Promise<T | undefined> {
+    console.log(event, data);
     const response = await ipcRenderer.invoke(this.#id, { event, data }) as Result<T>;
     return response?.data; // TODO: Error handling
   }
@@ -41,6 +43,7 @@ export class ClientRPC extends EventEmitter {
 
   // #region Flow handlers
   private handleFlow(_: IpcRendererEvent, { event, data }: { event: string, data: Result<unknown> }): void {
+    console.log(event, data);
     super.emit(event, data?.data); // TODO: Error handling
   }
   // #endregion

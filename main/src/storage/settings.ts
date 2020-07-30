@@ -5,7 +5,7 @@ const createSettingsStore = () => new Store<Partial<IInternalSettingsNew>>({
   name: "settings",
   defaults: {
     overlayLaunch: false,
-    overlayKey: "",
+    overlayKey: "Backquote",
     overlayWindowName: "League of Legends (TM) Client",
     showAllyTeam: true,
     showEnemyTeam: true,

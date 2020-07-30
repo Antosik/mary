@@ -13,4 +13,5 @@ declare type RPCDataType = void | Promise<void> | IResult<unknown> | Promise<IRe
 declare type TRPCHandlerLiveEvent = "live:connect" | "live:disconnect";
 declare type TRPCHandlerCooldownEvent = "cooldowns:object:get" | "cooldowns:player:get" | "cooldown:player:set" | "cooldown:player:reset";
 declare type TRPCHandlerSettingsEvent = "settings:open" | "settings:load" | "settings:save";
-declare type TRPCHandlerEvent = TRPCHandlerLiveEvent | TRPCHandlerCooldownEvent | TRPCHandlerSettingsEvent;
+declare type TRPCHandlerOverlayEvent = "overlay:hide";
+declare type TRPCHandlerEvent = TRPCHandlerLiveEvent | TRPCHandlerCooldownEvent | TRPCHandlerSettingsEvent | TRPCHandlerOverlayEvent;

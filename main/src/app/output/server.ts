@@ -46,10 +46,15 @@ export class MaryServer implements IMaryOutput, IDestroyable {
     this.#wsServer.on("connection", this._onWsConnection);
   }
 
+
+  // #region Getters & Setters
   public get events(): EventsWithInvoke {
     return this.#events;
   }
+  // #endregion Getters & Setters
 
+
+  // #region Main
   public start(): void {
     this.#polka.listen({ host: "0.0.0.0", port: 0 });
   }
@@ -61,6 +66,7 @@ export class MaryServer implements IMaryOutput, IDestroyable {
       }
     });
   }
+  // #endregion Main
 
 
   // #region Polka
@@ -90,7 +96,7 @@ export class MaryServer implements IMaryOutput, IDestroyable {
 
     return polkaSend(res, 200, result ?? {}, { "Content-Type": "application/json" });
   };
-  // #region Polka
+  // #endregion Polka
 
 
   // #region WebSocket
@@ -121,11 +127,13 @@ export class MaryServer implements IMaryOutput, IDestroyable {
   private _onWsConnection = (socket: WebSocket) => {
     socket.on("message", this._onWsMessage);
   };
-  // #region WebSocket
+  // #endregion WebSocket
 
 
+  // #region Cleanup
   public destroy(): void {
     this.#server.close();
     this.#wsServer.close();
   }
+  // #endregion Cleanup
 }

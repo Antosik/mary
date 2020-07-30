@@ -7,6 +7,7 @@ import { join as joinPath, resolve as resolvePath } from "path";
 
 export class MainWindow extends BrowserWindow {
   constructor(options: BrowserWindowConstructorOptions = {}) {
+
     const htmlPath = isDev ? resolvePath("target", "client.html") : joinPath(process.resourcesPath, "client.html");
     const preloadPath = isDev ? resolvePath("target/renderer", "preload.js") : joinPath(process.resourcesPath, "renderer", "preload.js");
 

@@ -17,6 +17,8 @@ export class MaryClient implements IMaryOutput, IDestroyable {
     this.#rpc = new MainRPC(RPC_MAIN_ID, this.#window);
   }
 
+
+  // #region Getters & Setters
   public get window(): MainWindow {
     return this.#window;
   }
@@ -24,13 +26,23 @@ export class MaryClient implements IMaryOutput, IDestroyable {
   public get events(): MainRPC {
     return this.#rpc;
   }
+  // #endregion Getters & Setters
 
+
+  // #region Main
   public send({ event, data }: TMessageContainer): void {
     this.#rpc.send(event, data);
   }
+  // #endregion Main
 
+
+  // #region Cleanup
   public destroy(): void {
     this.#rpc.destroy();
-    this.#window.close();
+
+    if (!this.#window.isDestroyed()) {
+      this.#window.close();
+    }
   }
+  // #endregion Cleanup
 }

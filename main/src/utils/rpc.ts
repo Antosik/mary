@@ -27,6 +27,7 @@ export class MainRPC extends EventsWithInvoke implements IDestroyable {
 
   // #region Main
   public send(event: string, data: RPCDataType = undefined): void {
+    // console.log(event, data);
     this.#window.webContents.send(this.#id, { event, data });
   }
   // #endregion Main
@@ -58,7 +59,10 @@ export class MainRPC extends EventsWithInvoke implements IDestroyable {
     super.destroy();
 
     this.removeAllListeners();
-    this.#window.webContents.removeAllListeners();
+
+    if (!this.#window.isDestroyed() && !this.#window.webContents.isDestroyed()) {
+      this.#window.webContents.removeAllListeners();
+    }
 
     ipcMain.removeHandler(this.#id);
     ipcMain.removeAllListeners(this.#id);

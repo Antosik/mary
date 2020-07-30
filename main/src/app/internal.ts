@@ -132,7 +132,7 @@ export class MaryInternal implements IDestroyable {
     Events.emit(
       "mary:send",
       {
-        event: "cooldown:player:ping",
+        event: "cooldown:object:ping",
         data: Result.create(cooldown.rawValue, "success")
       } as TMessageContainer
     );
