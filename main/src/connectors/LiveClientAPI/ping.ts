@@ -9,7 +9,13 @@ export class LiveClientAPIPing extends EventEmitter implements IDestroyable {
   private static PING_INTERVAL = 3e3;
 
   #pingTimer?: NodeJS.Timer;
-  #isConnected = false;
+  #isConnected: boolean;
+
+  constructor() {
+    super();
+
+    this.#isConnected = false;
+  }
 
   // #region Getters & Setters
   public get isConnected(): boolean {

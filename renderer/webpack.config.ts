@@ -1,11 +1,11 @@
 import type { Configuration } from "webpack";
 
-import InternalConfig from "./internal.config";
+import WebConfig from "./web.config";
 import RendererConfig from "./renderer.config";
 
 
 const config: Configuration[] = [
-  InternalConfig,
+  WebConfig,
   RendererConfig
 ];
 

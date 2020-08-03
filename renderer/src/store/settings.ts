@@ -3,7 +3,7 @@ import { isExists } from "@mary-shared/utils/typeguards";
 
 
 function createSettingsStore() {
-  const getInitialStore = (): IInternalSettingsNew => ({
+  const getInitialStore = (): IInternalSettings => ({
     overlayLaunch: false,
     overlayKey: "",
     overlayWindowName: "League of Legends (TM) Client",
@@ -14,15 +14,15 @@ function createSettingsStore() {
   });
 
   // eslint-disable-next-line @typescript-eslint/unbound-method
-  const { subscribe, update } = writable<IInternalSettingsNew>(getInitialStore());
+  const { subscribe, update } = writable<IInternalSettings>(getInitialStore());
 
-  function setSetting<T extends keyof IInternalSettingsNew>(key: T, value: IInternalSettingsNew[T]) {
+  function setSetting<T extends keyof IInternalSettings>(key: T, value: IInternalSettings[T]) {
     update(store => ({
       ...store,
       [key]: value
     }));
   }
-  const setSettings = (value?: IInternalSettingsNew) => update(() => isExists(value) ? value : getInitialStore());
+  const setSettings = (value?: IInternalSettings) => update(() => isExists(value) ? value : getInitialStore());
   const reset = () => update(() => getInitialStore());
 
   return {

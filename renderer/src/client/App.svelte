@@ -3,7 +3,7 @@
 
   import { onMount, onDestroy } from "svelte";
   import { groupByTeam } from "@mary-shared/utils/summoner";
-  import { isNotEmpty, isExists } from "@mary-shared/utils/typeguards";
+  import { isExists } from "@mary-shared/utils/typeguards";
 
   import { gameStore } from "@mary-web/store/game";
   import { settingsStore } from "@mary-web/store/settings";
@@ -13,12 +13,13 @@
   import GameObject from "@mary-web/components/GameObject.svelte";
 
   export let rpc: ClientRPC;
+  let width: number;
 
   const onMe = gameStore.setMe;
   const onPlayers = gameStore.setPlayers;
   const onPlayerCooldownGet = gameStore.setPlayerCooldown;
   const onObjectCooldownGet = gameStore.setObjectCooldown;
-  const onSettingsUpdated = (data: IInternalSettingsNew) => {
+  const onSettingsUpdated = (data: IInternalSettings) => {
     settingsStore.setSettings(data);
   };
 
@@ -26,7 +27,7 @@
     const [playercooldowns, objectcooldowns] = (await Promise.all([
       rpc.invoke("cooldowns:player:get"),
       rpc.invoke("cooldowns:object:get"),
-    ])) as [IInternalPlayerCooldownNew[], IInternalObjectCooldownNew[]];
+    ])) as [IInternalPlayerCooldown[], IInternalObjectCooldown[]];
     gameStore.setPlayerCooldowns(playercooldowns);
     gameStore.setObjectCooldowns(objectcooldowns);
     gameStore.setLive(true);
@@ -49,11 +50,23 @@
     await rpc.invoke("cooldown:player:reset", data.summonerName, data.target);
   };
 
-  let teams: Record<string, TInternalPlayerStatsNew[]>;
+  let teams: Record<string, TInternalPlayerStats[]>;
   $: teams = groupByTeam($gameStore.players);
 
-  let objectCooldowns: Record<string, IInternalObjectCooldownNew[]>;
-  $: objectCooldowns = groupByTeam($gameStore.objectcooldowns);
+  let objectCooldowns: Record<string, IInternalObjectCooldown[]>;
+  $: objectCooldowns = groupByTeam(
+    $gameStore.objectcooldowns.filter((el) => el.target === "Inhib")
+  );
+
+  let baronCooldown: IInternalObjectCooldown | undefined;
+  $: baronCooldown = $gameStore.objectcooldowns.find(
+    (el) => el.target === "Baron"
+  );
+
+  let elderCooldown: IInternalObjectCooldown | undefined;
+  $: elderCooldown = $gameStore.objectcooldowns.find(
+    (el) => el.target === "Elder"
+  );
 
   let showOrderTeam: boolean;
   let showChaosTeam: boolean;
@@ -65,8 +78,8 @@
     ($gameStore.me?.team === "ORDER" && $settingsStore.showEnemyTeam);
 
   function getPlayerCooldowns(
-    player: IInternalPlayerInfo
-  ): IInternalCooldownNew[] {
+    player: TInternalPlayerStats
+  ): IInternalCooldown[] {
     return $gameStore.playercooldowns.filter(
       (cd) => cd.summonerName === player.summonerName
     );
@@ -101,13 +114,33 @@
     width: 100%;
     height: 100%;
     position: relative;
+    padding: 4px 0;
 
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: 0 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1fr;
+    grid-template-rows: 0.75fr 0.75fr 5fr 1.75fr;
+    grid-gap: 4px;
+    grid-template-areas:
+      ". baron baron ."
+      ". elder elder ."
+      "order . . chaos"
+      "orderObj orderObj chaosObj chaosObj";
   }
-  .game--with-objects {
-    grid-template-rows: auto 1fr;
+  @media all and (min-width: 600px) {
+    .game {
+      grid-template-columns: 1fr 2.75fr 2.75fr 1fr;
+      grid-template-rows: 1.5fr 5fr 1.5fr;
+      grid-template-areas:
+        ". baron elder ."
+        "order orderObj chaosObj chaos"
+        ". . . .";
+    }
+  }
+  :global(.team--order) {
+    grid-area: order;
+  }
+  :global(.team--chaos) {
+    grid-area: chaos;
   }
   .game:not(.game--live) {
     display: flex;
@@ -115,64 +148,104 @@
     align-items: center;
     font-size: 20px;
   }
-  .game__objects {
-    display: grid;
-    grid-gap: 10px;
-    grid-template-rows: repeat(2, 1fr);
-    grid-template-columns: repeat(2, 1fr);
+  .game__object--list {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
   }
-  .game__players {
-    display: grid;
-    grid-gap: 10px;
+  @media all and (min-width: 600px) {
+    .game__object--list {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+    }
+  }
+  :global(.game__object--list > *) {
+    margin: 4px;
+  }
+  .game__object--baron {
+    justify-self: center;
+    grid-area: baron;
+  }
+  .game__object--elder {
+    justify-self: center;
+    grid-area: elder;
+  }
+  .game__object--order {
+    justify-self: right;
+    grid-area: orderObj;
+  }
+  .game__object--chaos {
+    justify-self: left;
+    grid-area: chaosObj;
   }
 </style>
 
 <div
+  bind:clientWidth={width}
   class="game"
-  class:game--live={$gameStore.isLive}
-  class:game--with-objects={isNotEmpty($gameStore.objectcooldowns)}>
+  class:game--live={$gameStore.isLive}>
   {#if $gameStore.isLive && isExists($gameStore.me)}
     {#if $settingsStore.showObjects}
-      <ul class="game__objects game__objects--order">
-        {#if objectCooldowns['ORDER'].length > 0}
+      {#if isExists(baronCooldown)}
+        <div class="game__object game__object--baron">
+          <GameObject
+            {...baronCooldown}
+            direction="right"
+            size={width > 600 ? 'big' : 'normal'} />
+        </div>
+      {/if}
+
+      {#if isExists(elderCooldown)}
+        <div class="game__object game__object--elder">
+          <GameObject
+            {...elderCooldown}
+            direction="left"
+            size={width > 600 ? 'big' : 'normal'} />
+        </div>
+      {/if}
+
+      {#if objectCooldowns['ORDER'].length > 0}
+        <ul class="game__object game__object--list game__object--order">
           {#each objectCooldowns['ORDER'] as object (object.id)}
-            <GameObject {...object} />
+            <GameObject
+              {...object}
+              direction="right"
+              size={width > 600 ? 'normal' : 'mini'} />
           {/each}
-        {/if}
-      </ul>
-      <ul class="game__objects game__objects--chaos">
-        {#if objectCooldowns['CHAOS'].length > 0}
+        </ul>
+      {/if}
+
+      {#if objectCooldowns['CHAOS'].length > 0}
+        <ul class="game__object game__object--list game__object--chaos">
           {#each objectCooldowns['CHAOS'] as object (object.id)}
-            <GameObject {...object} />
+            <GameObject
+              {...object}
+              direction="left"
+              size={width > 600 ? 'normal' : 'mini'} />
           {/each}
-        {/if}
-      </ul>
+        </ul>
+      {/if}
     {/if}
 
-    <ul class="game__players game__players--order">
-      {#if teams['ORDER'].length > 0 && showOrderTeam}
-        <Team players={teams['ORDER']} let:player>
-          <Player
-            team="ORDER"
-            {...player}
-            cooldowns={getPlayerCooldowns(player)}
-            on:cooldown-set={onCooldownSet}
-            on:cooldown-reset={onCooldownReset} />
-        </Team>
-      {/if}
-    </ul>
+    {#if showOrderTeam}
+      <Team id="ORDER" players={teams['ORDER']} let:player>
+        <Player
+          {...player}
+          cooldowns={getPlayerCooldowns(player)}
+          on:cooldown-set={onCooldownSet}
+          on:cooldown-reset={onCooldownReset} />
+      </Team>
+    {/if}
 
-    <ul class="game__players game__objects--chaos">
-      {#if teams['CHAOS'].length > 0 && showChaosTeam}
-        <Team players={teams['CHAOS']} let:player>
-          <Player
-            team="CHAOS"
-            {...player}
-            cooldowns={getPlayerCooldowns(player)}
-            on:cooldown-set={onCooldownSet}
-            on:cooldown-reset={onCooldownReset} />
-        </Team>
-      {/if}
-    </ul>
+    {#if teams['CHAOS'].length > 0 && showChaosTeam}
+      <Team id="CHAOS" players={teams['CHAOS']} let:player>
+        <Player
+          {...player}
+          cooldowns={getPlayerCooldowns(player)}
+          on:cooldown-set={onCooldownSet}
+          on:cooldown-reset={onCooldownReset} />
+      </Team>
+    {/if}
   {:else}Игра не запущена{/if}
 </div>

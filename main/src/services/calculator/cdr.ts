@@ -1,12 +1,12 @@
 import { ABILITY_ITEM_CDR_MAP, ABILITY_ITEM_CDR_MAP_HASTE, SS_ITEM_CDR_MAP } from "@mary-main/consts/items";
 import { SS_MAP_CDR_MAP } from "@mary-main/consts/maps";
-import { isExists } from "@mary-shared/utils/typeguards";
 import { SS_RUNE_CDR_MAP, ABILITY_RUNE_CDR_MAP } from "@mary-main/consts/runes";
+import { isExists } from "@mary-shared/utils/typeguards";
 
 
 export class CDRCalculator {
 
-  private static _constructCDRItem(id: number, target: TInternalCooldownReductionTargetNew, count: number): TInternalCooldownReductionNew {
+  private static _constructCDRItem(id: number, target: TInternalCooldownReductionTarget, count: number): TInternalCooldownReduction {
     return {
       id,
       target,
@@ -14,11 +14,11 @@ export class CDRCalculator {
     };
   }
 
-  public static calculateCDRFromItems(newStats: TInternalPlayerStatsNew): TInternalCooldownReductionItemNew[] {
+  public static calculateCDRFromItems(newStats: TInternalPlayerStats): TInternalCooldownReductionItem[] {
 
-    const ssItems: TInternalCooldownReductionItemNew[] = [];
-    const abilityItems: TInternalCooldownReductionItemNew[] = [];
-    const abilityHasteItems: TInternalCooldownReductionItemNew[] = [];
+    const ssItems: TInternalCooldownReductionItem[] = [];
+    const abilityItems: TInternalCooldownReductionItem[] = [];
+    const abilityHasteItems: TInternalCooldownReductionItem[] = [];
 
     for (const item of newStats.items) {
 
@@ -43,10 +43,10 @@ export class CDRCalculator {
     return [...ssItems, ...abilityItems, ...abilityHasteItems];
   }
 
-  public static calculateCDRFromRunes(newStats: TInternalPlayerStatsNew): TInternalCooldownReductionNew[] {
+  public static calculateCDRFromRunes(newStats: TInternalPlayerStats): TInternalCooldownReduction[] {
 
-    const ssRunes: TInternalCooldownReductionNew[] = [];
-    const abilityRunes: TInternalCooldownReductionNew[] = [];
+    const ssRunes: TInternalCooldownReduction[] = [];
+    const abilityRunes: TInternalCooldownReduction[] = [];
 
     for (const rune of newStats.runes) {
 
@@ -70,9 +70,9 @@ export class CDRCalculator {
     return [...ssRunes, ...abilityRunes];
   }
 
-  public static calculateCDRFromMap(mapId: number): TInternalCooldownReductionNew[] {
+  public static calculateCDRFromMap(mapId: number): TInternalCooldownReduction[] {
 
-    const ssMaps: TInternalCooldownReductionNew[] = [];
+    const ssMaps: TInternalCooldownReduction[] = [];
 
     const mapCDR = SS_MAP_CDR_MAP.get(mapId);
     if (isExists(mapCDR)) {

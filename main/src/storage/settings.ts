@@ -1,7 +1,7 @@
 import Store from "electron-store";
 
 
-const createSettingsStore = () => new Store<Partial<IInternalSettingsNew>>({
+const createSettingsStore = () => new Store<Partial<IInternalSettings>>({
   name: "settings",
   defaults: {
     overlayLaunch: false,

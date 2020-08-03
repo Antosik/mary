@@ -14,8 +14,8 @@ export class SettingsWindow extends BrowserWindow {
       title: "Mary - Settings",
 
       width: 500,
-      height: 300,
-      minWidth: 350,
+      height: 400,
+      minWidth: 500,
       minHeight: 400,
 
       show: false,

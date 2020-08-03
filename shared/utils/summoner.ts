@@ -9,7 +9,7 @@ export function groupByTeam<T extends { team: ILiveAPIPlayerTeam }>(arr: T[]): R
   );
 }
 
-export function getPlayerNameToTeamMap(arr: TInternalPlayerStatsNew[]): Map<string, ILiveAPIPlayerTeam> {
+export function getPlayerNameToTeamMap(arr: TInternalPlayerStats[]): Map<string, ILiveAPIPlayerTeam> {
   const result = new Map<string, ILiveAPIPlayerTeam>();
 
   for (const summoner of arr) {

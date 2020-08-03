@@ -2,9 +2,9 @@ import { Cooldown } from "@mary-main/model/cooldown";
 import { Events } from "@mary-main/utils/events";
 
 
-export class ObjectCooldown extends Cooldown implements IInternalObjectCooldownNew, IDestroyable {
+export class ObjectCooldown extends Cooldown implements IInternalObjectCooldown, IDestroyable {
 
-  public static fromRawValue(rawValue: IInternalObjectCooldownNew): ObjectCooldown | undefined {
+  public static fromRawValue(rawValue: IInternalObjectCooldown): ObjectCooldown | undefined {
 
     const now = new Date();
     if (now > rawValue.end) {
@@ -17,43 +17,43 @@ export class ObjectCooldown extends Cooldown implements IInternalObjectCooldownN
 
   private static _generateId(
     team: ILiveAPIPlayerTeam,
-    target: TInternalCooldownObjectNew,
+    target: TInternalCooldownObject,
     lane?: ILiveAPIMapLane
   ) {
     return `${team}-${target}-${lane ?? ""}`;
   }
 
-  #target: TInternalCooldownObjectNew;
+  #target: TInternalCooldownObject;
   #team: ILiveAPIPlayerTeam;
   #lane?: ILiveAPIMapLane;
 
   public constructor(
     team: ILiveAPIPlayerTeam,
-    target: TInternalCooldownObjectNew,
+    target: TInternalCooldownObject,
     seconds: number,
     lane?: ILiveAPIMapLane
   ) {
 
-    super(ObjectCooldown._generateId(team, target, lane), seconds, () => Events.emit("data:cooldown:object", this));
+    super(ObjectCooldown._generateId(team, target, lane), seconds, () => this._emit());
 
     this.#team = team;
     this.#target = target;
     this.#lane = lane;
 
-    Events.emit("data:cooldown:object", this);
+    this._emit();
   }
 
   // #region Getters & Setters
   public get team(): ILiveAPIPlayerTeam {
     return this.#team;
   }
-  public get target(): TInternalCooldownObjectNew {
+  public get target(): TInternalCooldownObject {
     return this.#target;
   }
   public get lane(): ILiveAPIMapLane | undefined {
     return this.#lane;
   }
-  public get rawValue(): IInternalObjectCooldownNew {
+  public get rawValue(): IInternalObjectCooldown {
     return {
       team: this.#team,
       target: this.#target,
@@ -65,9 +65,13 @@ export class ObjectCooldown extends Cooldown implements IInternalObjectCooldownN
 
 
   // #region Internal
+  private _emit(): void {
+    Events.emit("data:cooldown:object", this);
+  }
+
   public reset(): void {
     this.destroy();
-    Events.emit("data:cooldown:object", this);
+    this._emit();
   }
   // #endregion Internal
 }

@@ -1,11 +1,12 @@
 import type { AttachEvent } from "electron-overlay-window";
 
-import { BrowserWindow, } from "electron";
+import { BrowserWindow } from "electron";
 import { overlayWindow as overlay } from "electron-overlay-window";
 import isDev from "electron-is-dev";
 import { join as joinPath, resolve as resolvePath } from "path";
 
 import { getKeyCodeFromElectronInput } from "@mary-main/utils/keys";
+import { isNotBlank } from "@mary-shared/utils/typeguards";
 
 
 export class OverlayWindow extends BrowserWindow {
@@ -45,7 +46,6 @@ export class OverlayWindow extends BrowserWindow {
   }
 
   set isActive(active: boolean) {
-
     if (this.isActive !== active) {
       this.#isActive = active;
       this.emit("overlay:active-change", this.#isActive);
@@ -63,6 +63,7 @@ export class OverlayWindow extends BrowserWindow {
       this.focusOverlay();
     }
   }
+
   public focusMain = (): void => {
 
     if (this.isActive) {
@@ -80,14 +81,15 @@ export class OverlayWindow extends BrowserWindow {
       this.isActive = true;
     }
   };
-
   // #endregion Overlay logic
 
 
   // #region Events handlers
   private _onReadyToShow = () => {
     overlay.once("attach", this._onOverlayAttach);
-    overlay.attachTo(this, this.#overlaySettings.overlayWindowName);
+    if (isNotBlank(this.#overlaySettings.overlayWindowName)) {
+      overlay.attachTo(this, this.#overlaySettings.overlayWindowName);
+    }
   };
 
   private _onOverlayAttach = (e: AttachEvent) => {

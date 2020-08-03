@@ -1,25 +1,25 @@
+import { PlayerCooldown } from "@mary-main/model/playercooldown";
 import { CooldownCalculator } from "@mary-main/services/calculator/cooldown";
 import { CDRCalculator } from "@mary-main/services/calculator/cdr";
-import { PlayerCooldown } from "@mary-main/model/playercooldown";
 import { Events } from "@mary-main/utils/events";
 import { isExists, areSetsNotEqual, isNotEmpty } from "@mary-shared/utils/typeguards";
 
 
-export class Player implements IInternalPlayerNew, IDestroyable {
+export class Player implements IInternalPlayer, IDestroyable {
 
-  #stats: TInternalPlayerStatsNew;
-  #cooldowns: Map<TInternalCooldownTargetNew, PlayerCooldown>;
-  #cdr: TInternalPlayerCDRMapNew;
+  #stats: TInternalPlayerStats;
+  #cooldowns: Map<TInternalCooldownTarget, PlayerCooldown>;
+  #cdr: TInternalPlayerCDRMap;
 
   #isMapCalculated: boolean;
 
   constructor(
-    stats: TInternalPlayerStatsNew,
-    cooldowns?: IInternalPlayerCooldownNew[],
-    cdr?: TInternalPlayerCDRMapNew
+    stats: TInternalPlayerStats,
+    cooldowns?: IInternalPlayerCooldown[],
+    cdr?: TInternalPlayerCDRMap
   ) {
     this.#stats = stats;
-    this.#cooldowns = new Map<TInternalCooldownTargetNew, PlayerCooldown>();
+    this.#cooldowns = new Map<TInternalCooldownTarget, PlayerCooldown>();
     this.#cdr = cdr ?? {
       map: [],
       kills: new Set<string>(),
@@ -46,21 +46,25 @@ export class Player implements IInternalPlayerNew, IDestroyable {
   public get team(): ILiveAPIPlayerTeam {
     return this.stats.team;
   }
-  public get cdr(): TInternalPlayerCDRMapNew {
+  public get cdr(): TInternalPlayerCDRMap {
     return this.#cdr;
   }
-  public get stats(): TInternalPlayerStatsNew {
+  public get stats(): TInternalPlayerStats {
     return this.#stats;
   }
-  public set stats(value: TInternalPlayerStatsNew) {
+  public set stats(value: TInternalPlayerStats) {
     const oldStats = this.#stats;
     this.#stats = value;
     this._onStatsChange(oldStats, value);
   }
-  public get rawCooldowns(): IInternalPlayerCooldownNew[] {
-    return Array.from(this.#cooldowns.values()).map(cd => cd.rawValue);
+  public get rawCooldowns(): IInternalPlayerCooldown[] {
+    const results: IInternalPlayerCooldown[] = [];
+    for (const cooldown of this.#cooldowns.values()) {
+      results.push(cooldown);
+    }
+    return results;
   }
-  public get rawValue(): TInternalPlayerStatsNew {
+  public get rawValue(): TInternalPlayerStats {
     return { ...this.#stats };
   }
   // #endregion Getters & Setters
@@ -90,7 +94,7 @@ export class Player implements IInternalPlayerNew, IDestroyable {
     }
   }
 
-  public setPlayerCooldowns(value: IInternalPlayerCooldownNew[]): void {
+  public setPlayerCooldowns(value: IInternalPlayerCooldown[]): void {
     for (const item of value) {
       const cooldown = PlayerCooldown.fromRawValue(item);
       if (isExists(cooldown)) {
@@ -102,7 +106,7 @@ export class Player implements IInternalPlayerNew, IDestroyable {
 
 
   // #region Internal
-  private _onStatsChange(oldStats: TInternalPlayerStatsNew, newStats: TInternalPlayerStatsNew): void {
+  private _onStatsChange(oldStats: TInternalPlayerStats, newStats: TInternalPlayerStats): void {
 
     if (oldStats.isDead !== newStats.isDead) {
       Events.emit("data:player:dead", this);
@@ -117,18 +121,18 @@ export class Player implements IInternalPlayerNew, IDestroyable {
     }
   }
 
-  private _calculateCDRFromItems(stats: TInternalPlayerStatsNew) {
+  private _calculateCDRFromItems(stats: TInternalPlayerStats) {
     this.#cdr.items = CDRCalculator.calculateCDRFromItems(stats);
   }
 
-  private _calculateCDRFromRunes(stats: TInternalPlayerStatsNew) {
+  private _calculateCDRFromRunes(stats: TInternalPlayerStats) {
     this.#cdr.runes = CDRCalculator.calculateCDRFromRunes(stats);
   }
   // #endregion Internal
 
 
   // #region Cooldown zone
-  public setCooldown(target: TInternalCooldownTargetNew): void {
+  public setCooldown(target: TInternalCooldownTarget): void {
     const existingCooldown = this.#cooldowns.get(target);
 
     if (isExists(existingCooldown)) {
@@ -141,7 +145,7 @@ export class Player implements IInternalPlayerNew, IDestroyable {
     this.#cooldowns.set(target, cooldown);
   }
 
-  public resetCooldown(target: TInternalCooldownTargetNew): void {
+  public resetCooldown(target: TInternalCooldownTarget): void {
     const existingCooldown = this.#cooldowns.get(target);
 
     if (isExists(existingCooldown)) {
@@ -151,7 +155,7 @@ export class Player implements IInternalPlayerNew, IDestroyable {
     this.#cooldowns.delete(target);
   }
 
-  public removeCooldown(target: TInternalCooldownTargetNew): void {
+  public removeCooldown(target: TInternalCooldownTarget): void {
     const existingCooldown = this.#cooldowns.get(target);
 
     if (isExists(existingCooldown)) {

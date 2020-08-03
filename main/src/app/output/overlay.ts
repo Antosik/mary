@@ -101,7 +101,7 @@ export class MaryOverlay implements IMaryOutput, IDestroyable {
   }
 
   private _onKeyDown = (e: UiohookKeyboardEvent): void => {
-    if (this.#settings.overlayKey === getKeyCodeFromUiohookInput(e)) {
+    if (this.#window.isVisible() && this.#settings.overlayKey === getKeyCodeFromUiohookInput(e)) {
       this.#window.toggleOverlay();
     }
   };

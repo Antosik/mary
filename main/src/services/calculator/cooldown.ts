@@ -11,24 +11,24 @@ const Ultimate: Record<string, number[]> = ultimateAbilityData;
 
 export class CooldownCalculator {
 
-  private static _passiveTargets: TInternalCooldownTargetNew[] = ["P"];
-  private static _abilityTargets: TInternalCooldownTargetNew[] = ["Q", "W", "E", "R"];
-  private static _summonerSpellsTargets: TInternalCooldownTargetNew[] = ["D", "F"];
+  private static _passiveTargets: TInternalCooldownTarget[] = ["P"];
+  private static _abilityTargets: TInternalCooldownTarget[] = ["Q", "W", "E", "R"];
+  private static _summonerSpellsTargets: TInternalCooldownTarget[] = ["D", "F"];
 
-  private static _getInitialPassiveAbilityCooldown(_: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): number {
+  private static _getInitialPassiveAbilityCooldown(_: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
 
-    if (stats.championName === "Зак" || stats.championName === "Zac") {
+    if (stats.championName === "Zac") {
       return 300;
     }
 
-    if (stats.championName === "Анивия" || stats.championName === "Anivia") {
+    if (stats.championName === "Anivia") {
       return 240;
     }
 
     return 0;
   }
 
-  private static _getInitialAbilityCooldown(_: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): number {
+  private static _getInitialAbilityCooldown(_: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
 
     const cd: number[] = Ultimate[stats.championName];
     if (isEmpty(cd)) {
@@ -50,7 +50,7 @@ export class CooldownCalculator {
     return 0;
   }
 
-  private static _getSummonerSpellInfo(target: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): ISpellInfo | undefined {
+  private static _getSummonerSpellInfo(target: TInternalCooldownTarget, stats: TInternalPlayerStats): ISpellInfo | undefined {
 
     const [D, F] = stats.summonerSpells.values();
     const summonerSpell: string = target === "D" ? D : F;
@@ -62,7 +62,7 @@ export class CooldownCalculator {
     return spells.find(spell => spell.id === summonerSpell);
   }
 
-  private static _getInitialSummonerSpellCooldown(target: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): number {
+  private static _getInitialSummonerSpellCooldown(target: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
 
     const summonerSpellInfo = CooldownCalculator._getSummonerSpellInfo(target, stats);
 
@@ -75,7 +75,7 @@ export class CooldownCalculator {
       : summonerSpellInfo.cooldown;
   }
 
-  private static _getInitialTargetCooldown(target: TInternalCooldownTargetNew, stats: TInternalPlayerStatsNew): number {
+  private static _getInitialTargetCooldown(target: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
 
     if (CooldownCalculator._passiveTargets.includes(target)) {
       return CooldownCalculator._getInitialPassiveAbilityCooldown(target, stats);
@@ -92,7 +92,8 @@ export class CooldownCalculator {
     return 0;
   }
 
-  private static _reduceCooldownArray(previous: number, item: TInternalCooldownReductionNew) {
+
+  private static _reduceCooldownArray(previous: number, item: TInternalCooldownReduction) {
     return previous + item.count;
   }
 
@@ -107,7 +108,52 @@ export class CooldownCalculator {
       : -0.4;
   }
 
-  public static calculate(target: TInternalCooldownTargetNew, player: Player): number {
+  private static _calculateUltimateCooldown(_: TInternalCooldownTarget, initialCooldown: number, player: Player): number {
+
+    // Base CDR: Items & Runes
+    let CDR = 0;
+    CDR += player.cdr.items.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+    CDR += player.cdr.runes.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+    CDR = CooldownCalculator._maxCDRCheck(CDR, player);
+
+    // Extra CDR: Hunter & Air Dragons
+    let extraCDR = 0;
+    if (player.stats.runes.has(ULTIMATE_HUNTER_ID)) {
+      extraCDR += -0.05 + player.cdr.kills.size * -0.04;
+    }
+    extraCDR += player.cdr.dragons.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+
+    const extraInitialCooldown = initialCooldown + initialCooldown * extraCDR;
+    return extraInitialCooldown + extraInitialCooldown * CDR;
+  }
+
+  private static _calculateAbilitiesCooldown(_: TInternalCooldownTarget, initialCooldown: number, player: Player): number {
+
+    // Base CDR: Items & Runes
+    let CDR = 0;
+    CDR += player.cdr.runes.filter(c => c.target === "Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+    CDR += player.cdr.items.filter(c => c.target === "Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+    CDR = CooldownCalculator._maxCDRCheck(CDR, player);
+
+    return initialCooldown + initialCooldown * CDR;
+  }
+
+  private static _calculateSummonerSpellsCooldown(target: TInternalCooldownTarget, initialCooldown: number, player: Player): number {
+
+    const summonerSpellInfo = CooldownCalculator._getSummonerSpellInfo(target, player.stats);
+    if (summonerSpellInfo?.id === TELEPORT_CONST) {
+      return initialCooldown;
+    }
+
+    let CDR = 0;
+    CDR += player.cdr.map.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+    CDR += player.cdr.runes.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+    CDR += player.cdr.items.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+
+    return initialCooldown + initialCooldown * CDR;
+  }
+
+  public static calculate(target: TInternalCooldownTarget, player: Player): number {
 
     const initialCooldown = CooldownCalculator._getInitialTargetCooldown(target, player.stats);
     if (initialCooldown === 0) {
@@ -118,43 +164,18 @@ export class CooldownCalculator {
       return initialCooldown;
     }
 
-    let cdr = 0;
-
     if (target === "R") {
-
-      cdr += player.cdr.items.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-      cdr += player.cdr.runes.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-
-      cdr = CooldownCalculator._maxCDRCheck(cdr, player);
-
-      let extra_cdr = 0;
-      if (player.stats.runes.has(ULTIMATE_HUNTER_ID)) {
-        extra_cdr += -0.05 + player.cdr.kills.size * -0.04;
-      }
-      extra_cdr += player.cdr.dragons.filter(c => c.target === "Ultimate Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-
-      const extraInitialCooldown = initialCooldown + initialCooldown * extra_cdr;
-      return extraInitialCooldown + extraInitialCooldown * cdr;
+      return CooldownCalculator._calculateUltimateCooldown(target, initialCooldown, player);
     }
 
     if (CooldownCalculator._abilityTargets.includes(target)) {
-
-      cdr += player.cdr.runes.filter(c => c.target === "Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-      cdr += player.cdr.items.filter(c => c.target === "Ability").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-      cdr = CooldownCalculator._maxCDRCheck(cdr, player);
-
-    } else if (CooldownCalculator._summonerSpellsTargets.includes(target)) {
-
-      const summonerSpellInfo = CooldownCalculator._getSummonerSpellInfo(target, player.stats);
-      if (summonerSpellInfo?.name === TELEPORT_CONST) {
-        return initialCooldown;
-      }
-
-      cdr += player.cdr.map.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-      cdr += player.cdr.runes.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
-      cdr += player.cdr.items.filter(c => c.target === "Summoner Spell").reduce(CooldownCalculator._reduceCooldownArray.bind(this), 0);
+      return CooldownCalculator._calculateAbilitiesCooldown(target, initialCooldown, player);
     }
 
-    return initialCooldown + initialCooldown * cdr;
+    if (CooldownCalculator._summonerSpellsTargets.includes(target)) {
+      return CooldownCalculator._calculateSummonerSpellsCooldown(target, initialCooldown, player);
+    }
+
+    return 0;
   }
 }

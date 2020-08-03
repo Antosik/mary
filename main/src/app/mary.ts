@@ -84,11 +84,11 @@ export class Mary extends MaryInternal implements IDestroyable {
     return Result.create(cooldowns, "success");
   };
 
-  private _onCooldownsPlayerSet = (summonerName: string, target: TInternalCooldownTargetNew) => {     // "cooldown:player:set"
+  private _onCooldownsPlayerSet = (summonerName: string, target: TInternalCooldownTarget) => {     // "cooldown:player:set"
     this._getPlayer(summonerName).setCooldown(target);
   };
 
-  private _onCooldownsPlayerReset = (summonerName: string, target: TInternalCooldownTargetNew) => {   // "cooldown:player:reset"
+  private _onCooldownsPlayerReset = (summonerName: string, target: TInternalCooldownTarget) => {   // "cooldown:player:reset"
     this._getPlayer(summonerName).resetCooldown(target);
   };
 
@@ -109,7 +109,7 @@ export class Mary extends MaryInternal implements IDestroyable {
     return response === 0;
   }
 
-  private _onSettingsSave = (data: IInternalSettingsNew) => {   // "settings:save"
+  private _onSettingsSave = (data: IInternalSettings) => {   // "settings:save"
 
     const oldSettings = settingsStore.store;
     settingsStore.set(data);
@@ -305,7 +305,7 @@ export class Mary extends MaryInternal implements IDestroyable {
     }
   }
 
-  private _isRestartAfterSettingsSetNeeded(oldSettings: Partial<IInternalSettingsNew>, newSettings: Partial<IInternalSettingsNew>): boolean {
+  private _isRestartAfterSettingsSetNeeded(oldSettings: Partial<IInternalSettings>, newSettings: Partial<IInternalSettings>): boolean {
     return oldSettings.overlayWindowName !== newSettings.overlayWindowName
       || oldSettings.lanAvailability !== newSettings.lanAvailability
       || oldSettings.overlayLaunch !== newSettings.overlayLaunch;

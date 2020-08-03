@@ -14,11 +14,11 @@ const isProduction = nodeEnv === "production";
 const config: Configuration = ({
   ...baseConfig,
 
-  name: "mary-internal-view",
+  name: "mary-web-view",
   target: "web",
 
   entry: {
-    internal: joinPath(__dirname, "src/internal.ts"),
+    web: joinPath(__dirname, "src/web.ts"),
   },
 
   module: {

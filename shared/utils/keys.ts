@@ -1,7 +1,8 @@
 export function getKeyRawCode(code: string): string {
   if (code.startsWith("Key")) {
     return code.substr("Key".length);
-  } else if (code.startsWith("Digit")) {
+  }
+  if (code.startsWith("Digit")) {
     return code.substr("Digit".length);
   }
   return code;

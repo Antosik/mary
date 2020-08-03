@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import type { Result } from "@mary-shared/utils/result";
 
-import EventTarget from "@ungap/event-target";
+import { EventEmitter } from "events";
 
-import { JSONDate_toDate } from "@mary-shared/utils/random";
-import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
+import { JSONDate_toDate } from "@mary-shared/utils/serialize";
+import { isNotExists } from "@mary-shared/utils/typeguards";
 
 
-export class ClientRPC extends EventTarget {
+export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable {
 
   #ip: string;
   #ws?: WebSocket;
@@ -21,7 +21,6 @@ export class ClientRPC extends EventTarget {
     this.#ws = new WebSocket(`ws://${this.#ip}`);
     this.#ws.addEventListener("message", this.handleFlow);
   }
-
 
   // #region Main
   public send(event: TRPCHandlerEvent, ...data: unknown[]): void {
@@ -47,13 +46,7 @@ export class ClientRPC extends EventTarget {
       return undefined;
     }
   }
-
-  public destroy(): void {
-    if (isExists(this.#ws)) {
-      this.#ws.close();
-    }
-  }
-  // #endregion
+  // #endregion Main
 
 
   // #region Flow handlers
@@ -63,11 +56,26 @@ export class ClientRPC extends EventTarget {
     }
 
     const { event, data } = JSON.parse(e.data, JSONDate_toDate) as TMessageContainer;
-
-    const eventToDispatch = new CustomEvent(event, { detail: data?.data });
-    this.dispatchEvent(eventToDispatch); // TODO: Error handling
+    this.emit(event, data?.data); // TODO: Error handling
   }
-  // #endregion
+  // #endregion Flow handlers
+
+
+  // #region Cleanup
+  public destroy(): void {
+
+    this.removeAllListeners();
+
+    if (isNotExists(this.#ws)) {
+      return;
+    }
+
+    this.#ws.removeEventListener("message", this.handleFlow);
+    if (this.#ws?.readyState !== WebSocket.CLOSED || this.#ws?.readyState !== WebSocket.CLOSING) {
+      this.#ws?.close();
+    }
+  }
+  // #endregion Cleanup
 }
 
 export const rpc = new ClientRPC();

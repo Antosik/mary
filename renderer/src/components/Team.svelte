@@ -1,11 +1,35 @@
 <script lang="typescript">
-  export let players: TInternalPlayerStatsNew[] = [];
+  export let id: ILiveAPIPlayerTeam;
+  export let players: TInternalPlayerStats[] = [];
 </script>
 
+<style>
+  .team {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+  .team__player {
+    max-width: 100px;
+    margin: 4px 0;
+  }
+  .team--order {
+    justify-self: left;
+  }
+  .team--chaos {
+    justify-self: right;
+  }
+</style>
+
 {#if players.length > 0}
-  {#each players as player (player.summonerName)}
-    <li class="player">
-      <slot {player} />
-    </li>
-  {:else}None{/each}
+  <ul
+    class="team"
+    class:team--order={id === 'ORDER'}
+    class:team--chaos={id === 'CHAOS'}>
+    {#each players as player (player.summonerName)}
+      <li class="team__player">
+        <slot {player} />
+      </li>
+    {/each}
+  </ul>
 {/if}

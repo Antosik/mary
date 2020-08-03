@@ -4,6 +4,7 @@ import { Tray, Menu, } from "electron";
 import isDev from "electron-is-dev";
 import { join as joinPath, resolve as resolvePath } from "path";
 
+
 export class MaryTray extends Tray {
 
   private static getTrayIcon() {

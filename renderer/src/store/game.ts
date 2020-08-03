@@ -3,10 +3,10 @@ import { writable } from "svelte/store";
 
 interface IGameStore {
   isLive: boolean;
-  me?: TInternalPlayerStatsNew;
-  players: TInternalPlayerStatsNew[];
-  playercooldowns: IInternalPlayerCooldownNew[];
-  objectcooldowns: IInternalObjectCooldownNew[];
+  me?: TInternalPlayerStats;
+  players: TInternalPlayerStats[];
+  playercooldowns: IInternalPlayerCooldown[];
+  objectcooldowns: IInternalObjectCooldown[];
 }
 
 
@@ -16,30 +16,36 @@ function createGameStore() {
   // eslint-disable-next-line @typescript-eslint/unbound-method
   const { subscribe, update } = writable<IGameStore>(getInitialStore());
 
+  const sortCooldowns = (a: IInternalCooldown, b: IInternalCooldown) => a.end < b.end ? -1 : 1;
   const setLive = (isLive: boolean) => isLive ? update(store => ({ ...store, isLive })) : reset();
-  const setMe = (me: TInternalPlayerStatsNew) => update(store => ({ ...store, me }));
-  const setPlayers = (players: TInternalPlayerStatsNew[]) => update(store => ({ ...store, players }));
-  const setPlayerCooldowns = (playercooldowns: IInternalPlayerCooldownNew[]) => update(store => ({ ...store, playercooldowns }));
-  const setPlayerCooldown = (cooldown: IInternalPlayerCooldownNew) => update(store => {
+  const setMe = (me: TInternalPlayerStats) => update(store => ({ ...store, me }));
+  const setPlayers = (players: TInternalPlayerStats[]) => update(store => ({ ...store, players }));
+  const setPlayerCooldowns = (playercooldowns: IInternalPlayerCooldown[]) => update(store =>
+    ({ ...store, playercooldowns: playercooldowns.sort(sortCooldowns) })
+  );
+  const setPlayerCooldown = (cooldown: IInternalPlayerCooldown) => update(store => {
 
-    const updatedCooldowns: IInternalPlayerCooldownNew[] = store.playercooldowns.filter(cd => cd.id !== cooldown.id);
+    const updatedCooldowns: IInternalPlayerCooldown[] = store.playercooldowns.filter(cd => cd.id !== cooldown.id);
 
     if (cooldown.end > new Date()) {
       updatedCooldowns.push(cooldown);
     }
 
-    return { ...store, playercooldowns: updatedCooldowns };
+
+    return { ...store, playercooldowns: updatedCooldowns.sort(sortCooldowns) };
   });
-  const setObjectCooldowns = (objectcooldowns: IInternalObjectCooldownNew[]) => update(store => ({ ...store, objectcooldowns }));
-  const setObjectCooldown = (cooldown: IInternalObjectCooldownNew) => update(store => {
+  const setObjectCooldowns = (objectcooldowns: IInternalObjectCooldown[]) => update(store =>
+    ({ ...store, objectcooldowns: objectcooldowns.sort(sortCooldowns) })
+  );
+  const setObjectCooldown = (cooldown: IInternalObjectCooldown) => update(store => {
 
-    const updatedCooldowns: IInternalObjectCooldownNew[] = store.objectcooldowns.filter(cd => cd.id !== cooldown.id);
+    const updatedCooldowns: IInternalObjectCooldown[] = store.objectcooldowns.filter(cd => cd.id !== cooldown.id);
 
     if (cooldown.end > new Date()) {
       updatedCooldowns.push(cooldown);
     }
 
-    return { ...store, objectcooldowns: updatedCooldowns };
+    return { ...store, objectcooldowns: updatedCooldowns.sort(sortCooldowns) };
   });
   const reset = () => update(() => getInitialStore());
 

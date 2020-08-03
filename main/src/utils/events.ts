@@ -1,5 +1,6 @@
 import { EventEmitter } from "events";
 
+
 class Events extends EventEmitter {
   constructor() {
     super();
@@ -8,5 +9,6 @@ class Events extends EventEmitter {
 }
 
 const instance = new Events();
+
 
 export { instance as Events };

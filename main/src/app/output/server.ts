@@ -14,8 +14,9 @@ import { Server as WebSocketServer } from "ws";
 
 import { EventsWithInvoke } from "@mary-main/utils/eventsExtended";
 import { getMyIPAddress } from "@mary-main/utils/lan";
-import { Set_toJSON } from "@mary-shared/utils/random";
+import { Set_toJSON } from "@mary-shared/utils/serialize";
 import { isNotExists } from "@mary-shared/utils/typeguards";
+import { logDebug } from "@mary-main/utils/log";
 
 
 export class MaryServer implements IMaryOutput, IDestroyable {
@@ -107,11 +108,13 @@ export class MaryServer implements IMaryOutput, IDestroyable {
     this.#ip = myAddress.map(address => `${address}:${port}`);
 
     this.#events.emit("server:ip", this.#ip);
-    console.log(myAddress.map(address => `${address}:${port}`));
+
+    const ips = myAddress.map(address => `${address}:${port}`).toString();
+    logDebug(`"[MaryServer]" IPs: ${ips}`);
   };
 
   private _onWsMessage = async (message: string) => {
-    const { event, data } = JSON.parse(message) as { event: string, data: any[] };
+    const { event, data } = JSON.parse(message) as { event: string, data: unknown[] };
     const handler = this.#events.getHandler(event);
 
     if (isNotExists(handler)) {
@@ -119,9 +122,11 @@ export class MaryServer implements IMaryOutput, IDestroyable {
       return;
     }
 
-    const _ = typeof data === "undefined"
-      ? await handler()
-      : await handler(...data);
+    if (typeof data === "undefined") {
+      await handler();
+    } else {
+      await handler(...data);
+    }
   };
 
   private _onWsConnection = (socket: WebSocket) => {

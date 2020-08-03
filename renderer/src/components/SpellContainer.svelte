@@ -4,9 +4,9 @@
 
   import TimeCounter from "@mary-web/components/TimeCounter.svelte";
 
-  export let summonerSpell: string;
-  export let side = "left";
-  export let cooldown: IInternalCooldownNew;
+  export let icon: string;
+  export let cooldown: IInternalCooldown;
+  export let rounded: boolean = false;
 
   const dispatch = createEventDispatcher();
   const onClick = () => dispatch("set");
@@ -15,40 +15,42 @@
 
 <style>
   .spell {
+    position: relative;
+    display: flex;
+
     background: none;
     border: none;
     cursor: pointer;
-    position: relative;
+
     width: 100%;
     height: 100%;
   }
-
-  .spell--cooldown .spell-icon:after {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
+  .spell--rounded {
+    border-radius: 50%;
+    overflow: hidden;
+  }
+  .spell__icon {
+    width: 100%;
+    height: 100%;
+  }
+  .spell__cd {
+    font-size: 80%;
+    background: rgba(0, 0, 0, 0.6);
+    color: #dc4141;
+    font-weight: bold;
     z-index: 2;
-    content: "";
   }
 </style>
 
 <button
   type="button"
   class="spell"
-  class:spell--cooldown={isExists(cooldown)}
+  class:spell--rounded={rounded}
   on:click={onClick}
   on:dblclick={onDoubleClick}>
-  <span class="spell-icon">
-    <img src="./img/spells/{summonerSpell}.png" alt={summonerSpell} />
-  </span>
+  <img src={icon} alt="Spell icon" class="spell__icon" />
   {#if isExists(cooldown)}
-    <span
-      class="cooldown-timer"
-      class:cooldown-timer--side-left={side === 'left'}
-      class:cooldown-timer--side-right={side === 'right'}>
+    <span class="spell__cd absolute-full flex-center">
       <TimeCounter end={cooldown.end} />
     </span>
   {/if}

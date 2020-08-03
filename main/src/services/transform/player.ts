@@ -4,7 +4,7 @@ import { SMITE_CONST } from "@mary-main/consts/spells";
 export class PlayerTransformer {
 
   private static _transformChampionName(rawChampionName: string): string {
-    return rawChampionName.split("_")[3];
+    return rawChampionName.split("_")[3];     // TODO: Proper validation
   }
 
   private static _transformSummonerSpell(spell: ILiveAPIPlayerSummonerSpell): string {
@@ -15,7 +15,7 @@ export class PlayerTransformer {
     return spell.rawDisplayName.split("_")[2]; // TODO: Proper validation
   }
 
-  public static transformToInternal(player: ILiveAPIPlayer): TInternalPlayerStatsNew {
+  public static transformToInternal(player: ILiveAPIPlayer): TInternalPlayerStats {
 
     const items = player.items.map(item => item.itemID);
     const runes = [player.runes.primaryRuneTree.id, player.runes.secondaryRuneTree.id];

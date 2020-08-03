@@ -7,7 +7,13 @@ declare interface IRPCHandlerResponse {
   data?: unknown;
 }
 
-declare type TRPCHandlerFunc<T = unknown> = (...args: any[]) => void | Promise<void> | IResult<T> | Promise<IResult<T>>; // eslint-disable-line @typescript-eslint/no-explicit-any
+declare type TMessageContainer<T = unknown> = {
+  event: string;
+  data?: undefined | IResult<T>;
+};
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+declare type TRPCHandlerFunc<T = unknown> = (...args: any[]) => void | Promise<void> | IResult<T> | Promise<IResult<T>>;
 declare type RPCDataType = void | Promise<void> | IResult<unknown> | Promise<IResult<unknown>>;
 
 declare type TRPCHandlerLiveEvent = "live:connect" | "live:disconnect";

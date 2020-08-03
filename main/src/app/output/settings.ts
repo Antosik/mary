@@ -11,7 +11,6 @@ export class MarySettings implements IMaryOutput, IDestroyable {
   public static launch(): MarySettings {
     return new this();
   }
-  
 
   private constructor() {
     this.#window = new SettingsWindow();

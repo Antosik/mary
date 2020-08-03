@@ -5,9 +5,10 @@ import { GameDataTransformer } from "@mary-main/services/transform/gamedata";
 import { GameEventTransformer } from "@mary-main/services/transform/gameevent";
 import { PlayerTransformer } from "@mary-main/services/transform/player";
 import { isNotExists, isEmpty, isNotEmpty, isExists } from "@mary-shared/utils/typeguards";
+import { logError } from "@mary-main/utils/log";
 
 
-export class Game implements IInternalGameNew, IDestroyable {
+export class Game implements IInternalGame, IDestroyable {
 
   public static isTheSameGames(first: Game, second: Game): boolean {
     if (isNotExists(first.stats) || isNotExists(second.stats)) {
@@ -19,9 +20,9 @@ export class Game implements IInternalGameNew, IDestroyable {
   }
 
   #me: string;
-  #stats: TInternalGameStatsNew;
+  #stats: TInternalGameStats;
   #players: Map<string, Player>;
-  #events: TInternalGameEventNew[];
+  #events: TInternalGameEvent[];
   #cooldowns: Map<string, ObjectCooldown>;
 
   #isPlayersMapGenerated: boolean;
@@ -30,8 +31,8 @@ export class Game implements IInternalGameNew, IDestroyable {
     me: string,
     stats: ILiveAPIGameStats,
     players?: ILiveAPIPlayer[],
-    events?: TInternalGameEventNew[],
-    cooldowns?: IInternalObjectCooldownNew[]
+    events?: TInternalGameEvent[],
+    cooldowns?: IInternalObjectCooldown[]
   ) {
     this.#me = me;
     this.#stats = GameDataTransformer.transformToInternal(stats);
@@ -62,10 +63,10 @@ export class Game implements IInternalGameNew, IDestroyable {
   public get mePlayer(): Player | undefined {
     return this.#players.get(this.#me);
   }
-  public get stats(): TInternalGameStatsNew {
+  public get stats(): TInternalGameStats {
     return this.#stats;
   }
-  public get events(): TInternalGameEventNew[] {
+  public get events(): TInternalGameEvent[] {
     return this.#events;
   }
   public get players(): Map<string, Player> {
@@ -78,25 +79,28 @@ export class Game implements IInternalGameNew, IDestroyable {
 
 
   // #region Custom Getters & Setters
-  public getPlayersCooldowns(): IInternalPlayerCooldownNew[] {
-    let cooldowns: IInternalPlayerCooldownNew[] = [];
+  public getPlayersCooldowns(): IInternalPlayerCooldown[] {
+    let cooldowns: IInternalPlayerCooldown[] = [];
     for (const player of this.#players.values()) {
       cooldowns = cooldowns.concat(player.rawCooldowns);
     }
     return cooldowns;
   }
-  public getObjectsCooldowns(): IInternalObjectCooldownNew[] {
-    let cooldowns: IInternalObjectCooldownNew[] = [];
+
+  public getObjectsCooldowns(): IInternalObjectCooldown[] {
+    let cooldowns: IInternalObjectCooldown[] = [];
     for (const objectCooldown of this.#cooldowns.values()) {
       cooldowns = cooldowns.concat(objectCooldown.rawValue);
     }
     return cooldowns;
   }
+
   public setEvents(value: ILiveAPIGameEvent[]): void {
     const oldEvents = this.#events;
     this.#events = value;
     this._onEventsChange(oldEvents, value);
   }
+
   public setPlayers(value: ILiveAPIPlayer[]): void {
 
     for (const rawPlayer of value) {
@@ -118,6 +122,7 @@ export class Game implements IInternalGameNew, IDestroyable {
         this.#players.set(newPlayer.stats.summonerName, newPlayer);
       } else {
 
+        logError(`"[MaryServer]" Player not found - ${JSON.stringify(rawPlayer)}`);
         throw new Error("Player not found");
       }
     }
@@ -126,7 +131,8 @@ export class Game implements IInternalGameNew, IDestroyable {
       this.#isPlayersMapGenerated = true;
     }
   }
-  private setObjectCooldowns(value: IInternalObjectCooldownNew[]): void {
+
+  private setObjectCooldowns(value: IInternalObjectCooldown[]): void {
     for (const item of value) {
       const cooldown = ObjectCooldown.fromRawValue(item);
       if (isExists(cooldown)) {
@@ -146,7 +152,7 @@ export class Game implements IInternalGameNew, IDestroyable {
 
 
   // #region Events handlers
-  private _onEventsChange(oldEvents: TInternalGameEventNew[], newEvents: TInternalGameEventNew[]): void {
+  private _onEventsChange(oldEvents: TInternalGameEvent[], newEvents: TInternalGameEvent[]): void {
 
     const isInit = isEmpty(oldEvents);
     if (isInit && !this.#isPlayersMapGenerated) {
@@ -248,6 +254,9 @@ export class Game implements IInternalGameNew, IDestroyable {
   public destroy(): void {
     for (const player of this.#players.values()) {
       player.destroy();
+    }
+    for (const cooldown of this.#cooldowns.values()) {
+      cooldown.destroy();
     }
   }
   // #endregion Cleanup

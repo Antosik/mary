@@ -1,4 +1,4 @@
-export class Cooldown implements IInternalCooldownNew, IDestroyable {
+export class Cooldown implements IInternalCooldown, IDestroyable {
 
   private static INTERVAL_SIZE = 5e3;
 
@@ -34,7 +34,7 @@ export class Cooldown implements IInternalCooldownNew, IDestroyable {
   public get end(): Date {
     return this.#end;
   }
-  public get rawValue(): IInternalCooldownNew {
+  public get rawValue(): IInternalCooldown {
     return {
       id: this.#id,
       start: this.#start,

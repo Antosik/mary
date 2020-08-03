@@ -2,9 +2,9 @@ import { Cooldown } from "@mary-main/model/cooldown";
 import { Events } from "@mary-main/utils/events";
 
 
-export class PlayerCooldown extends Cooldown implements IInternalPlayerCooldownNew, IDestroyable {
+export class PlayerCooldown extends Cooldown implements IInternalPlayerCooldown, IDestroyable {
 
-  public static fromRawValue(rawValue: IInternalPlayerCooldownNew): PlayerCooldown | undefined {
+  public static fromRawValue(rawValue: IInternalPlayerCooldown): PlayerCooldown | undefined {
 
     const now = new Date();
     if (now > rawValue.end) {
@@ -15,34 +15,34 @@ export class PlayerCooldown extends Cooldown implements IInternalPlayerCooldownN
     return new PlayerCooldown(rawValue.summonerName, rawValue.target, seconds);
   }
 
-  private static _generateId(summonerName: string, target: TInternalCooldownTargetNew) {
+  private static _generateId(summonerName: string, target: TInternalCooldownTarget) {
     return `${summonerName}-${target}`;
   }
 
   #summonerName: string;
-  #target: TInternalCooldownTargetNew;
+  #target: TInternalCooldownTarget;
 
   public constructor(
     summonerName: string,
-    target: TInternalCooldownTargetNew,
+    target: TInternalCooldownTarget,
     seconds: number
   ) {
-    super(PlayerCooldown._generateId(summonerName, target), seconds, () => Events.emit("data:cooldown:player", this));
+    super(PlayerCooldown._generateId(summonerName, target), seconds, () => this._emit());
 
     this.#summonerName = summonerName;
     this.#target = target;
 
-    Events.emit("data:cooldown:player", this);
+    this._emit();
   }
 
   // #region Getters & Setters
   public get summonerName(): string {
     return this.#summonerName;
   }
-  public get target(): TInternalCooldownTargetNew {
+  public get target(): TInternalCooldownTarget {
     return this.#target;
   }
-  public get rawValue(): IInternalPlayerCooldownNew {
+  public get rawValue(): IInternalPlayerCooldown {
     return {
       summonerName: this.#summonerName,
       target: this.#target,
@@ -53,9 +53,13 @@ export class PlayerCooldown extends Cooldown implements IInternalPlayerCooldownN
 
 
   // #region Internal
+  private _emit(): void {
+    Events.emit("data:cooldown:player", this);
+  }
+
   public reset(): void {
     this.destroy();
-    Events.emit("data:cooldown:player", this);
+    this._emit();
   }
   // #endregion Internal
 }
