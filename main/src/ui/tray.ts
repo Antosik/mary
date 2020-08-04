@@ -13,14 +13,14 @@ export class MaryTray extends Tray {
 
   constructor(menuItems: MenuItemConstructorOptions[]) {
     super(MaryTray.getTrayIcon());
-    this._setMaryMenu(menuItems);
+
+    this.setMaryMenu(menuItems);
+    this.setToolTip("Mary");
   }
 
-  private _setMaryMenu(menuItems: MenuItemConstructorOptions[]) {
-
-    const contextMenu = Menu.buildFromTemplate(menuItems);
-
-    this.setToolTip("Mary");
-    this.setContextMenu(contextMenu);
+  public setMaryMenu(menuItems: MenuItemConstructorOptions[]): void {
+    this.setContextMenu(
+      Menu.buildFromTemplate(menuItems)
+    );
   }
 }

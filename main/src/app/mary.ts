@@ -1,6 +1,7 @@
-import { MenuItemConstructorOptions, MenuItem, dialog } from "electron";
+import type { MenuItemConstructorOptions, MenuItem, } from "electron";
+import type { AppUpdater } from "electron-updater";
 
-import { app, shell } from "electron";
+import { app, dialog, shell } from "electron";
 
 import { MaryInternal } from "@mary-main/app/internal";
 import { MaryClient } from "@mary-main/app/output/client";
@@ -9,6 +10,7 @@ import { MarySettings } from "@mary-main/app/output/settings";
 import { MaryServer } from "@mary-main/app/output/server";
 import { settingsStore } from "@mary-main/storage/settings";
 import { MaryTray } from "@mary-main/ui/tray";
+import { autoUpdater } from "@mary-main/utils/autoupdater";
 import { Events } from "@mary-main/utils/events";
 import { Result } from "@mary-shared/utils/result";
 import { isExists, isNotExists, isNotEmpty } from "@mary-shared/utils/typeguards";
@@ -23,6 +25,11 @@ export class Mary extends MaryInternal implements IDestroyable {
   #server: MaryServer | null;
   #overlay: MaryOverlay | null;
 
+  #ips: string[];
+  #updater: AppUpdater;
+  #update: "init" | "checking" | "not-available" | "available" | "downloading" | "downloaded";
+
+
   public static launch(): Mary {
     return new this();
   }
@@ -34,6 +41,10 @@ export class Mary extends MaryInternal implements IDestroyable {
     this.#settings = null;
     this.#server = null;
     this.#overlay = null;
+
+    this.#ips = [];
+    this.#updater = autoUpdater;
+    this.#update = "init";
 
     if (settingsStore.get("overlayLaunch")) {
       this.#overlay = this._initOverlay(settingsStore.store);
@@ -48,7 +59,10 @@ export class Mary extends MaryInternal implements IDestroyable {
 
     this
       ._handleTrayEvents()
-      ._handleMaryInternalEvents();
+      ._handleMaryInternalEvents()
+      ._handleUpdaterEvents();
+
+    void this.#updater.checkForUpdates();
   }
 
 
@@ -60,6 +74,16 @@ export class Mary extends MaryInternal implements IDestroyable {
 
   private _handleMaryInternalEvents() {
     Events.addListener("mary:send", this._onEventsMarySend);
+    return this;
+  }
+
+  private _handleUpdaterEvents() {
+    this.#updater.addListener("checking-for-update", this._onCheckingForUpdate);
+    this.#updater.addListener("update-available", this._onUpdateAvailable);
+    this.#updater.addListener("update-not-available", this._onUpdateNotAvailable);
+    this.#updater.addListener("download-progress", this._onUpdateDownloading);
+    this.#updater.addListener("update-downloaded", this._onUpdateDownloaded);
+
     return this;
   }
   // #endregion Events handling
@@ -132,10 +156,10 @@ export class Mary extends MaryInternal implements IDestroyable {
     this.#settings?.window.close();
   };
 
-  private _onServerIp = (ip: string[]) => {     // "server:ip"
-    this.#tray.destroy();
+  private _onServerIp = (ips: string[]) => {     // "server:ip"
 
-    this.#tray = new MaryTray(this._getTrayMenuItems(ip));
+    this.#ips = ips;
+    this.#tray.setMaryMenu(this._getTrayMenuItems());
     this._handleTrayEvents();
   };
 
@@ -245,16 +269,21 @@ export class Mary extends MaryInternal implements IDestroyable {
 
 
   // #region Tray Events handlers
-  private _getTrayMenuItems(ips: string[] = []): MenuItemConstructorOptions[] {
+  private _getTrayMenuItems(): MenuItemConstructorOptions[] {
 
-    const ipsItems = ips.map<MenuItemConstructorOptions>(ip => ({
+    const ipsItems = this.#ips.map<MenuItemConstructorOptions>(ip => ({
       label: ip,
       click: this._onIPClick
     }));
 
+    const updateMenuItem = this._isPortableVersion()
+      ? this._getUpdateMenuItemPortable()
+      : this._getUpdateMenuItem();
+
     const menu: MenuItemConstructorOptions[] = [
       { label: "Open", type: "normal", click: this._onTrayMenuOpenClick },
-      { label: "LAN", type: "submenu", submenu: ipsItems, visible: isNotEmpty(ips) },
+      { label: "LAN", type: "submenu", submenu: ipsItems, visible: isNotEmpty(this.#ips) },
+      updateMenuItem,
       { label: "Settings", type: "normal", click: this._onTrayMenuSettingsClick },
       { label: "Quit", type: "normal", click: this._onTrayMenuQuitClick }
     ];
@@ -280,9 +309,129 @@ export class Mary extends MaryInternal implements IDestroyable {
   // #endregion Tray Events handlers
 
 
+  // #region Version update Events Handlers
+  private _onCheckingForUpdate = () => {
+    this.#update = "checking";
+    this.#tray.setMaryMenu(this._getTrayMenuItems());
+  };
+
+  private _onUpdateAvailable = () => {
+    this.#update = "available";
+    this.#tray.setMaryMenu(this._getTrayMenuItems());
+  };
+
+  private _onUpdateNotAvailable = () => {
+    this.#update = "not-available";
+    this.#tray.setMaryMenu(this._getTrayMenuItems());
+  };
+
+  private _onUpdateDownloading = () => {
+
+    if (this.#update === "downloading") { return; }
+
+    this.#update = "downloading";
+    this.#tray.setMaryMenu(this._getTrayMenuItems());
+  };
+
+  private _onUpdateDownloaded = () => {
+    this.#update = "downloaded";
+    this.#tray.setMaryMenu(this._getTrayMenuItems());
+  };
+  // #endregion Version update Events Handlers
+
+
+  // #region Version updater utils zone
+  private _isPortableVersion() {
+    return "PORTABLE_EXECUTABLE_APP_FILENAME" in process.env;
+  }
+  private _checkForUpdates = async () => {
+    await this.#updater.checkForUpdatesAndNotify();
+  };
+  private _downloadUpdate = async () => {
+    await this.#updater.downloadUpdate();
+  };
+  private _quitAndInstallUpdate = (restart = true) => {
+    this.#updater.quitAndInstall(true, restart);
+  };
+  private _getUpdateMenuItem = (): MenuItemConstructorOptions => {
+
+    let label = "Check for updates";
+    let sublabel: string | undefined;
+    let handler: TAnyFunc = this._checkForUpdates;
+    let enabled = true;
+
+    switch (this.#update) {
+      case "available": {
+        sublabel = "New version is available";
+        handler = this._downloadUpdate;
+        break;
+      }
+      case "not-available": {
+        sublabel = "No updates available";
+        break;
+      }
+      case "checking": {
+        label = "Checking for updates...";
+        enabled = false;
+        break;
+      }
+      case "downloaded": {
+        label = "Install and restart";
+        handler = this._quitAndInstallUpdate;
+        break;
+      }
+    }
+
+    return {
+      label,
+      sublabel,
+      enabled,
+      click: handler,
+    };
+  };
+  private _openMaryPage = () => {
+    void shell.openExternal("https://github.com/Antosik/mary");
+  };
+  private _getUpdateMenuItemPortable = (): MenuItemConstructorOptions => {
+
+    let label = "Check for updates";
+    let handler: TAnyFunc = this._checkForUpdates;
+    let enabled = true;
+
+    switch (this.#update) {
+      case "not-available": {
+        label = "No updates available";
+        break;
+      }
+      case "checking": {
+        label = "Checking for updates...";
+        enabled = false;
+        break;
+      }
+      case "downloaded":
+      case "available": {
+        label = "New version is available";
+        handler = this._openMaryPage;
+        break;
+      }
+    }
+
+    return {
+      label,
+      enabled,
+      click: handler,
+    };
+  };
+  // #endregion Version updater utils zone
+
+
   // #region Utils
   private _quitApp(): void {
-    app.quit();
+    if (this.#update === "downloaded") {
+      this._quitAndInstallUpdate(false);
+    } else {
+      app.quit();
+    }
   }
 
   private _sendToOutputs(container: TMessageContainer | TMessageContainer[]): void {

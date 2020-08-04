@@ -22,9 +22,13 @@
   ],
   "mac": {
     "category": "public.app-category.games",
-    "target": "dmg"
+    "target": "dmg",
+    "publish": [
+      "github"
+    ]
   },
   "dmg": {
+    "background": "build/macos/background.png",
     "iconSize": 80,
     "window": {
       "x": 400,
@@ -48,22 +52,38 @@
   "linux": {
     "target": [
       "AppImage"
+    ],
+    "publish": [
+      "github"
     ]
   },
   "win": {
     "target": [
       {
+        "target": "nsis",
+        "arch": [
+          "x64",
+          "ia32"
+        ]
+      },
+      {
         "target": "portable",
         "arch": [
-          "x64"
+          "x64",
+          "ia32"
         ]
       }
+    ],
+    "publish": [
+      "github"
     ]
   },
   "nsis": {
     "oneClick": false,
     "perMachine": false,
-    "allowToChangeInstallationDirectory": true
+    "allowToChangeInstallationDirectory": true,
+    "installerHeader": "win/header.bmp",
+    "installerSidebar": "win/banner.bmp"
   },
   "buildDependenciesFromSource": true,
   "npmRebuild": true

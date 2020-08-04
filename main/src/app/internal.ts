@@ -12,27 +12,35 @@ import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
 
 export class MaryInternal implements IDestroyable {
 
-  protected _game?: Game;
-  protected _liveClientApiPing: LiveClientAPIPing;
+  #game?: Game;
+  #liveClientApiPing: LiveClientAPIPing;
 
   protected constructor() {
 
-    this._liveClientApiPing = new LiveClientAPIPing();
+    this.#liveClientApiPing = new LiveClientAPIPing();
 
     this
       ._handleLiveGameAPIEvents()
       ._handleInternalEvents();
   }
 
+  protected get _liveClientApiPing(): LiveClientAPIPing {
+    return this.#liveClientApiPing;
+  }
+
+  protected get _game(): Game | undefined {
+    return this.#game;
+  }
+
 
   // #region Events handling zone
   private _handleLiveGameAPIEvents() {
 
-    this._liveClientApiPing.addListener("connected", this._onLiveConnected);
-    this._liveClientApiPing.addListener("reconnected", this._onLiveReconnected);
-    this._liveClientApiPing.addListener("disconnected", this._onLiveDisconnected);
-    this._liveClientApiPing.addListener("players", this._onLivePlayers);
-    this._liveClientApiPing.addListener("events", this._onLiveEvents);
+    this.#liveClientApiPing.addListener("connected", this._onLiveConnected);
+    this.#liveClientApiPing.addListener("reconnected", this._onLiveReconnected);
+    this.#liveClientApiPing.addListener("disconnected", this._onLiveDisconnected);
+    this.#liveClientApiPing.addListener("players", this._onLivePlayers);
+    this.#liveClientApiPing.addListener("events", this._onLiveEvents);
 
     return this;
   }
@@ -60,7 +68,7 @@ export class MaryInternal implements IDestroyable {
 
   private _onLiveReconnected = async () => {
 
-    if (isNotExists(this._game)) {
+    if (isNotExists(this.#game)) {
       await this._initGame();
       this._sendMeta();
     }
@@ -80,15 +88,15 @@ export class MaryInternal implements IDestroyable {
   };
 
   private _onLivePlayers = (players: ILiveAPIPlayer[]) => {
-    if (isNotExists(this._game)) {
+    if (isNotExists(this.#game)) {
       return;
     }
 
-    this._game.setPlayers(players);
+    this.#game.setPlayers(players);
 
     const msg: TMessageContainer = {
       event: "live:players", data: Result.create(
-        Array.from(this._game.players.values()).map(p => p.rawValue),
+        Array.from(this.#game.players.values()).map(p => p.rawValue),
         "success"
       )
     };
@@ -97,8 +105,8 @@ export class MaryInternal implements IDestroyable {
   };
 
   private _onLiveEvents = (events: ILiveAPIGameEvent[]) => {
-    if (isExists(this._game)) {
-      this._game.setEvents(events);
+    if (isExists(this.#game)) {
+      this.#game.setEvents(events);
     }
   };
   // #endregion LiveAPI Events Handlers
@@ -125,8 +133,8 @@ export class MaryInternal implements IDestroyable {
 
   private _onInternalCooldownObject = (cooldown: ObjectCooldown) => {
 
-    if (new Date() >= cooldown.rawValue.end && isExists(this._game)) {
-      this._game.removeObjectCooldown(cooldown.id);
+    if (new Date() >= cooldown.rawValue.end && isExists(this.#game)) {
+      this.#game.removeObjectCooldown(cooldown.id);
     }
 
     Events.emit(
@@ -151,11 +159,11 @@ export class MaryInternal implements IDestroyable {
   private _sendMeta(): void {
 
     const msg: TMessageContainer[] = [
-      { event: "live:me", data: Result.create(this._game!.mePlayer?.rawValue) },
+      { event: "live:me", data: Result.create(this.#game!.mePlayer?.rawValue) },
       {
         event: "live:players",
         data: Result.create(
-          Array.from(this._game!.players.values()).map(p => p.rawValue),
+          Array.from(this.#game!.players.values()).map(p => p.rawValue),
           "success"
         )
       },
@@ -176,18 +184,18 @@ export class MaryInternal implements IDestroyable {
       LiveClientAPI.getGameEvents()
     ]);
 
-    this._game = new Game(myName, gameData);
-    this._game.setPlayers(players);
-    this._game.setEvents(events);
+    this.#game = new Game(myName, gameData);
+    this.#game.setPlayers(players);
+    this.#game.setEvents(events);
   }
 
   protected _getPlayer(summonerName: string): Player {
 
-    if (isNotExists(this._game)) {
+    if (isNotExists(this.#game)) {
       throw new Error("Game not started");
     }
 
-    const player = this._game.players.get(summonerName);
+    const player = this.#game.players.get(summonerName);
     if (isNotExists(player)) {
       throw new Error("Player not found");
     }
@@ -196,9 +204,9 @@ export class MaryInternal implements IDestroyable {
   }
 
   private _resetGame(): void {
-    if (isExists(this._game)) {
-      this._game.destroy();
-      this._game = undefined;
+    if (isExists(this.#game)) {
+      this.#game.destroy();
+      this.#game = undefined;
     }
   }
   // #endregion Utils zone
@@ -206,16 +214,16 @@ export class MaryInternal implements IDestroyable {
 
   // #region Cleanup zone
   public destroy(): void {
-    this._liveClientApiPing.removeListener("connected", this._onLiveConnected);
-    this._liveClientApiPing.removeListener("reconnected", this._onLiveReconnected);
-    this._liveClientApiPing.removeListener("disconnected", this._onLiveDisconnected);
-    this._liveClientApiPing.removeListener("players", this._onLivePlayers);
-    this._liveClientApiPing.removeListener("events", this._onLiveEvents);
+    this.#liveClientApiPing.removeListener("connected", this._onLiveConnected);
+    this.#liveClientApiPing.removeListener("reconnected", this._onLiveReconnected);
+    this.#liveClientApiPing.removeListener("disconnected", this._onLiveDisconnected);
+    this.#liveClientApiPing.removeListener("players", this._onLivePlayers);
+    this.#liveClientApiPing.removeListener("events", this._onLiveEvents);
 
     Events.removeListener("data:cooldown:player", this._onInternalCooldownPlayer);
     Events.removeListener("data:cooldown:object", this._onInternalCooldownObject);
 
-    this._liveClientApiPing.destroy();
+    this.#liveClientApiPing.destroy();
     this._resetGame();
   }
   // #endregion Cleanup zone
