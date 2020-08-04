@@ -60,7 +60,7 @@ export class Player implements IInternalPlayer, IDestroyable {
   public get rawCooldowns(): IInternalPlayerCooldown[] {
     const results: IInternalPlayerCooldown[] = [];
     for (const cooldown of this.#cooldowns.values()) {
-      results.push(cooldown);
+      results.push(cooldown.rawValue);
     }
     return results;
   }

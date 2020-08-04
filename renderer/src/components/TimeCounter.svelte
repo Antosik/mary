@@ -1,5 +1,5 @@
 <script lang="typescript">
-  import { createEventDispatcher, onDestroy } from "svelte";
+  import { createEventDispatcher, onMount, onDestroy } from "svelte";
 
   export let speed = 0.2;
   export let end: Date;
@@ -24,9 +24,17 @@
 
   $: initTimer(new Date(end));
 
-  const formatTime = (count: number) => count.toFixed(1);
+  const formatTime = (count: number) => count.toFixed(0);
+  const onVisibilityChange = () => {
+    initTimer(new Date(end));
+  }
+
+  onMount(() => {
+    document.addEventListener("visibilitychange", onVisibilityChange);
+  })
 
   onDestroy(() => {
+    document.removeEventListener("visibilitychange", onVisibilityChange);
     clearInterval(timer);
   });
 </script>

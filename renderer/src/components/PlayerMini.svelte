@@ -30,9 +30,15 @@
   .player__target {
     position: absolute;
     bottom: 0;
+    z-index: 2;
+  }
+  .player--mini.player--direction-left .player__target {
     right: 0;
     transform: translateX(12px);
-    z-index: 2;
+  }
+  .player--mini.player--direction-right .player__target {
+    left: 0;
+    transform: translateX(calc(-100% + 12px));
   }
 </style>
 
@@ -48,11 +54,11 @@
 
     <div class="player__target">
       {#if cooldown.target === 'R'}
-        <SpellContainerMini icon="./img/abilities/{championName}R.png" {cooldown} />
+        <SpellContainerMini icon="./img/abilities/{championName}R.png" {cooldown} {direction} />
       {:else if cooldown.target === 'D'}
-        <SpellContainerMini icon="./img/spells/{summonerSpellsArray[0]}.png" {cooldown} />
+        <SpellContainerMini icon="./img/spells/{summonerSpellsArray[0]}.png" {cooldown} {direction} />
       {:else if cooldown.target === 'F'}
-        <SpellContainerMini icon="./img/spells/{summonerSpellsArray[1]}.png" {cooldown} />
+        <SpellContainerMini icon="./img/spells/{summonerSpellsArray[1]}.png" {cooldown} {direction} />
       {/if}
     </div>
   </div>

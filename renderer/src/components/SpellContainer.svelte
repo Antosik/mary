@@ -34,7 +34,7 @@
     height: 100%;
   }
   .spell__cd {
-    font-size: 80%;
+    font-size: 90%;
     background: rgba(0, 0, 0, 0.6);
     color: #dc4141;
     font-weight: bold;

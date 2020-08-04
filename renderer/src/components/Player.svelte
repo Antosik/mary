@@ -67,8 +67,6 @@
     height: 50%;
     position: absolute;
     bottom: 0;
-    right: 0;
-    transform: translate(20%, 20%);
     z-index: 3;
     grid-area: championIcon;
   }
@@ -82,15 +80,23 @@
   .player--direction-left .player__name {
     text-align: left;
   }
+  .player--direction-left .player__ultimate {
+    right: 0;
+    transform: translate(20%, 20%);
+  }
   .player--direction-right {
     grid-template-areas:
       "playerName playerName"
       "championIcon summonerSpells";
-    grid-template-columns: 1fr 2fr;
+    grid-template-columns: 2fr 1fr;
     grid-template-rows: max-content max-content;
   }
   .player--direction-right .player__name {
     text-align: right;
+  }
+  .player--direction-right .player__ultimate {
+    left: 0;
+    transform: translate(-20%, 20%);
   }
 </style>
 

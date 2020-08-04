@@ -23,6 +23,10 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
 
 
   // #region Main
+  public setOpenHandler(): void {
+    return;
+  }
+
   public send(event: TRPCHandlerEvent, ...data: unknown[]): void {
     return ipcRenderer.send(this.#id, { event, data });// TODO: Error handling
   }

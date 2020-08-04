@@ -1,6 +1,4 @@
 <script lang="typescript">
-  import type { ClientRPC } from "@mary-web/data/rpc";
-
   import { onMount, onDestroy } from "svelte";
   import { groupByTeam } from "@mary-shared/utils/summoner";
   import { isExists, isNotExists } from "@mary-shared/utils/typeguards";
@@ -13,7 +11,7 @@
   import PlayerMini from "@mary-web/components/PlayerMini.svelte";
   import GameObject from "@mary-web/components/GameObject.svelte";
 
-  export let rpc: ClientRPC;
+  export let rpc: IClientRPC;
 
   let _isActive: boolean;
   $: _isActive = false;
@@ -262,11 +260,15 @@
         {#if _isActive}
           <Player
             {...player}
+            direction="left"
             cooldowns={getPlayerCooldowns(player)}
             on:cooldown-set={onCooldownSet}
             on:cooldown-reset={onCooldownReset} />
         {:else}
-          <PlayerMini {...player} cooldowns={getPlayerCooldowns(player)} />
+          <PlayerMini
+            {...player}
+            direction="left"
+            cooldowns={getPlayerCooldowns(player)} />
         {/if}
       </Team>
     {/if}
@@ -276,11 +278,15 @@
         {#if _isActive}
           <Player
             {...player}
+            direction="right"
             cooldowns={getPlayerCooldowns(player)}
             on:cooldown-set={onCooldownSet}
             on:cooldown-reset={onCooldownReset} />
         {:else}
-          <PlayerMini {...player} cooldowns={getPlayerCooldowns(player)} />
+          <PlayerMini
+            {...player}
+            direction="right"
+            cooldowns={getPlayerCooldowns(player)} />
         {/if}
       </Team>
     {/if}

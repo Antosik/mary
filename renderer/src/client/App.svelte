@@ -1,6 +1,4 @@
 <script lang="typescript">
-  import type { ClientRPC } from "@mary-web/data/rpc";
-
   import { onMount, onDestroy } from "svelte";
   import { groupByTeam } from "@mary-shared/utils/summoner";
   import { isExists } from "@mary-shared/utils/typeguards";
@@ -12,7 +10,7 @@
   import Player from "@mary-web/components/Player.svelte";
   import GameObject from "@mary-web/components/GameObject.svelte";
 
-  export let rpc: ClientRPC;
+  export let rpc: IClientRPC;
   let width: number;
 
   const onMe = gameStore.setMe;
@@ -86,6 +84,8 @@
   }
 
   onMount(async () => {
+    rpc.setOpenHandler(() => rpc.send("live:connect"));
+
     rpc.addListener("settings:updated", onSettingsUpdated);
     rpc.addListener("live:connected", onConnected);
     rpc.addListener("live:me", onMe);
@@ -232,6 +232,7 @@
       <Team id="ORDER" players={teams['ORDER']} let:player>
         <Player
           {...player}
+          direction="left"
           cooldowns={getPlayerCooldowns(player)}
           on:cooldown-set={onCooldownSet}
           on:cooldown-reset={onCooldownReset} />
@@ -242,6 +243,7 @@
       <Team id="CHAOS" players={teams['CHAOS']} let:player>
         <Player
           {...player}
+          direction="right"
           cooldowns={getPlayerCooldowns(player)}
           on:cooldown-set={onCooldownSet}
           on:cooldown-reset={onCooldownReset} />

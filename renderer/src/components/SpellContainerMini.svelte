@@ -3,6 +3,7 @@
 
   export let icon: string;
   export let cooldown: IInternalCooldown;
+  export let direction: "left" | "right" = "left";
 </script>
 
 <style>
@@ -18,11 +19,9 @@
     box-sizing: border-box;
   }
   .spell__cd {
-    transform: translateX(100%);
     position: absolute;
     top: 0;
     bottom: 0;
-    right: 0;
     width: 40px;
     color: #fff;
     font-weight: bold;
@@ -30,9 +29,20 @@
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000,
       1px 1px 0 #000;
   }
+  .spell--direction-left .spell__cd {
+    transform: translateX(100%);
+    right: 0;
+  }
+  .spell--direction-right .spell__cd {
+    transform: translateX(-100%);
+    left: 0;
+  }
 </style>
 
-<div class="spell spell--mini">
+<div
+  class="spell spell--mini"
+  class:spell--direction-left={direction === 'left'}
+  class:spell--direction-right={direction === 'right'}>
   <img src={icon} alt="Spell icon" class="spell__icon" />
   <span class="spell__cd flex-center">
     <TimeCounter end={cooldown.end} />

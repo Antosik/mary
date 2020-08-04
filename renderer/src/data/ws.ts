@@ -4,13 +4,18 @@ import type { Result } from "@mary-shared/utils/result";
 import { EventEmitter } from "events";
 
 import { JSONDate_toDate } from "@mary-shared/utils/serialize";
-import { isNotExists } from "@mary-shared/utils/typeguards";
+import { isNotExists, isExists } from "@mary-shared/utils/typeguards";
 
 
 export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable {
 
+  private static readonly PING_INTERVAL = 1.5e3;
+
   #ip: string;
+
   #ws?: WebSocket;
+  #onOpen?: TAnyFunc;
+  #pingTimer?: NodeJS.Timer;
 
   constructor() {
     super();
@@ -18,11 +23,31 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
     this.handleFlow = this.handleFlow.bind(this);   // eslint-disable-line @typescript-eslint/no-unsafe-assignment
 
     this.#ip = window.location.host;
+    this._connect();
+  }
+
+  private _connect() {
+    if (this.#ws?.readyState === WebSocket.OPEN || this.#ws?.readyState === WebSocket.CONNECTING) {
+      this.#ws.close();
+    }
+
     this.#ws = new WebSocket(`ws://${this.#ip}`);
+
     this.#ws.addEventListener("message", this.handleFlow);
+    if (isExists(this.#onOpen)) {
+      this.#ws.addEventListener("open", this.#onOpen);
+    }
+
+    if (isNotExists(this.#pingTimer)) {
+      this.#pingTimer = setInterval(this._ping, ClientRPC.PING_INTERVAL);
+    }
   }
 
   // #region Main
+  public setOpenHandler(func: TAnyFunc): void {
+    this.#onOpen = func;
+  }
+
   public send(event: TRPCHandlerEvent, ...data: unknown[]): void {
 
     if (this.#ws?.readyState === WebSocket.OPEN) {
@@ -42,10 +67,18 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
       }).then(res => res.json()) as Result<T>;
       return json?.data;
     } catch (e) {
-      console.error(e);
       return undefined;
     }
   }
+
+  private _ping = (): void => {
+    if (this.#ws?.readyState === WebSocket.OPEN) {
+      this.#ws.send(JSON.stringify({ event: "ping" }));
+    } else if (this.#ws?.readyState !== WebSocket.CONNECTING) {
+      this._connect();
+      console.log("trying to reconnect");
+    }
+  };
   // #endregion Main
 
 
@@ -66,13 +99,15 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
 
     this.removeAllListeners();
 
-    if (isNotExists(this.#ws)) {
-      return;
+    if (isExists(this.#pingTimer)) {
+      clearInterval(this.#pingTimer);
     }
 
-    this.#ws.removeEventListener("message", this.handleFlow);
-    if (this.#ws?.readyState !== WebSocket.CLOSED || this.#ws?.readyState !== WebSocket.CLOSING) {
-      this.#ws?.close();
+    if (isExists(this.#ws)) {
+      this.#ws.removeEventListener("message", this.handleFlow);
+      if (this.#ws?.readyState !== WebSocket.CLOSED || this.#ws?.readyState !== WebSocket.CLOSING) {
+        this.#ws?.close();
+      }
     }
   }
   // #endregion Cleanup
