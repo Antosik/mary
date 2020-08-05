@@ -1,61 +1,133 @@
-declare interface IInternalPlayerRune {
-  displayName: string;
-  runeID: number;
+/* eslint-disable @typescript-eslint/no-explicit-any */
+
+// #region Main
+declare type IKeyValue = Record<string, any>;
+declare type TAnyFunc = (...args: any[]) => any;
+declare interface IDestroyable {
+  destroy(): void;
 }
+// #endregion Main
 
-declare interface IInternalPlayerRunes {
-  primary: IInternalPlayerRune;
-  secondary: IInternalPlayerRune;
-}
 
-declare interface IInternalPlayerItem {
-  count: number;
-  displayName: string;
-  itemID: number;
-  slot: 1 | 2 | 3 | 4 | 5 | 6;
-}
-
-declare interface IInternalPlayerInfo extends Record<string, any> {
-  summonerName: string;
-
-  championName: string;
-  level: number;
-  scores: ILiveAPIPlayerScore;
-  team: ILiveAPIPlayerTeam;
-
-  isDead: boolean;
-  respawnTimer: number;
-
-  items: IInternalPlayerItem[];
-  runes: IInternalPlayerRunes;
-  summonerSpells: string[];
-}
-
-declare interface IInternalCooldown {
-  summonerName: string;
-  championName: string;
-  start: Date;
-  end: Date;
-  target: string;
-}
-
+// #region Transformed League Data
 declare type ILevelDependantCD = (level: number) => number;
 declare interface ISpellInfo {
   id: string;
   name: string;
   cooldown: number | ILevelDependantCD;
 }
-
-
-declare type IRPCHandlerFunc = (...args: any[]) => IRPCHandlerResponse | Promise<IRPCHandlerResponse>; // eslint-disable-line @typescript-eslint/no-explicit-any
-
-declare interface IRPCHandlerResponse {
-  status: "ok" | "error";
-  notification?: string;
-  data?: unknown;
+declare type TInternalCooldownTargetAbility = "Q" | "W" | "E";
+declare type TInternalCooldownTargetUltimate = "R";
+declare type TInternalCooldownTargetSummonerSpell = "D" | "F";
+declare type TInternalCooldownTargetPassive = "P";
+declare type TInternalCooldownTarget =
+  | TInternalCooldownTargetAbility
+  | TInternalCooldownTargetUltimate
+  | TInternalCooldownTargetSummonerSpell
+  | TInternalCooldownTargetPassive;
+declare type TInternalCooldownObject =
+  | "Elder"
+  | "Baron"
+  | "Inhib";
+declare type TInternalCooldownReductionTarget =
+  | "Ability"
+  | "Ultimate Ability"
+  | "Summoner Spell";
+declare interface IInternalCooldown {
+  id: string;
+  start: Date;
+  end: Date;
 }
+declare interface IInternalPlayerCooldown extends IInternalCooldown {
+  target: TInternalCooldownTarget;
+  summonerName: string;
+}
+declare interface IInternalObjectCooldown extends IInternalCooldown {
+  target: TInternalCooldownObject;
+  team: ILiveAPIPlayerTeam;
+  lane?: ILiveAPIMapLane;
+}
+declare type TInternalCooldownReduction = {
+  id: number;
+  count: number;
+  target: TInternalCooldownReductionTarget;
+};
+declare type TInternalCooldownReductionItem = TInternalCooldownReduction & {
+  isHaste: boolean;
+};
+declare type TInternalMapInfoCDRMap = {
+  map: TInternalCooldownReduction[];
+};
+declare type TInternalStatsCDRMap = {
+  items: TInternalCooldownReductionItem[];
+  runes: TInternalCooldownReduction[];
+};
+declare type TInternalEventsCDRMap = {
+  kills: Set<string>;
+  dragons: TInternalCooldownReduction[];
+};
+declare type TInternalPlayerCDRMap = TInternalMapInfoCDRMap & TInternalStatsCDRMap & TInternalEventsCDRMap;
+declare type TInternalPlayerTrackTargets = Record<TInternalCooldownTarget, boolean>;
+declare type TInternalPlayerStats = {
+  summonerName: string;
+  championName: string;
+  team: ILiveAPIPlayerTeam;
 
-declare type RPCHandlerEventType = "live:connect" | "cooldowns:get" | "cooldowns:set";
+  level: number;
+  items: Set<number>;
+  runes: Set<number>;
+  summonerSpells: Set<string>;
 
-declare type IKeyValue = Record<string, any>; // eslint-disable-line @typescript-eslint/no-explicit-any
-declare type TAnyFunc = (...args: any[]) => any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  isDead: boolean;
+  respawnTimer: number;
+
+  track?: TInternalPlayerTrackTargets;
+};
+declare interface IInternalPlayer {
+  stats: TInternalPlayerStats;
+  cooldowns?: Map<TInternalCooldownTarget, IInternalCooldown>;
+  cdr?: TInternalPlayerCDRMap;
+}
+declare type TInternalChampionKillEvent = {
+  id: number;
+  killer: string;
+  assisters: Set<string>;
+  victim: string;
+};
+declare type TInternalBaronKillEvent = {
+  id: number;
+  team: ILiveAPIPlayerTeam;
+};
+declare type TInternalDragonKillEvent = {
+  id: number;
+  team: ILiveAPIPlayerTeam;
+  dragonType: ILiveAPIDragonType;
+};
+declare type TInternalInhibKillEvent = {
+  team: ILiveAPIPlayerTeam;
+  lane: ILiveAPIMapLane;
+};
+declare type TInternalGameStats = {
+  gameTime: number;
+  mapId: number;
+};
+declare type TInternalGameEvent = ILiveAPIGameEvent;
+declare interface IInternalGame {
+  me: string;
+  stats: TInternalGameStats;
+  players?: Map<string, IInternalPlayer>;
+  events?: TInternalGameEvent[];
+  cooldowns?: Map<string, IInternalObjectCooldown>;
+}
+// #endregion Transformed League Data
+
+
+declare interface IInternalSettings {
+  overlayLaunch: boolean;
+  overlayKey: string;
+  overlayWindowName: string;
+  showAllyTeam: boolean;
+  showEnemyTeam: boolean;
+  showObjects: boolean;
+  lanAvailability: boolean;
+}

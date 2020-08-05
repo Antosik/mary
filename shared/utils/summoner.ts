@@ -1,15 +1,15 @@
-export function groupByTeam(arr: IInternalPlayerInfo[]): Record<ILiveAPIPlayerTeam, IInternalPlayerInfo[]> {
+export function groupByTeam<T extends { team: ILiveAPIPlayerTeam }>(arr: T[]): Record<ILiveAPIPlayerTeam, T[]> {
   return arr.reduce(
     function (rv, x) {
       const team = x.team;
       (rv[team] = rv[team] || []).push(x);
       return rv;
     },
-    { "ORDER": [] as IInternalPlayerInfo[], "CHAOS": [] as IInternalPlayerInfo[] },
+    { "ORDER": [] as T[], "CHAOS": [] as T[] },
   );
 }
 
-export function getPlayerNameToTeamMap(arr: IInternalPlayerInfo[]): Map<string, ILiveAPIPlayerTeam> {
+export function getPlayerNameToTeamMap(arr: TInternalPlayerStats[]): Map<string, ILiveAPIPlayerTeam> {
   const result = new Map<string, ILiveAPIPlayerTeam>();
 
   for (const summoner of arr) {

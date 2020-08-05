@@ -1,29 +1,26 @@
-import { Tray, Menu, app } from "electron";
+import type { MenuItemConstructorOptions } from "electron";
+
+import { Tray, Menu, } from "electron";
 import isDev from "electron-is-dev";
 import { join as joinPath, resolve as resolvePath } from "path";
 
-import { Window } from "./window";
 
+export class MaryTray extends Tray {
 
-export function createTrayIcon(window: Window): Tray {
+  private static getTrayIcon() {
+    return isDev ? resolvePath("target", "tray-icon.png") : joinPath(process.resourcesPath, "tray-icon.png");
+  }
 
-  const trayIconPath = isDev ? resolvePath("target", "tray-icon.png") : joinPath(process.resourcesPath, "tray-icon.png");
-  const trayMenu = Menu.buildFromTemplate([
-    {
-      label: "Закрыть",
-      click: () => {
-        app.exit();
-      }
-    }
-  ]);
+  constructor(menuItems: MenuItemConstructorOptions[]) {
+    super(MaryTray.getTrayIcon());
 
-  const tray = new Tray(trayIconPath);
+    this.setMaryMenu(menuItems);
+    this.setToolTip("Mary");
+  }
 
-  tray.addListener("click", () => {
-    window.focus();
-  });
-  tray.setToolTip("Mary");
-  tray.setContextMenu(trayMenu);
-
-  return tray;
+  public setMaryMenu(menuItems: MenuItemConstructorOptions[]): void {
+    this.setContextMenu(
+      Menu.buildFromTemplate(menuItems)
+    );
+  }
 }

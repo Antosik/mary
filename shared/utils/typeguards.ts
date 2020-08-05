@@ -23,3 +23,23 @@ export function isNotBlank(item: string | NotExisting): item is string {
 export function isBlank(item: string | NotExisting): item is NotExisting {
   return !isExists(item) || item.trim().length === 0;
 }
+
+export function areSetsEqual<T>(aSet: Set<T>, bSet: Set<T>): boolean {
+  if (aSet.size !== bSet.size) { return false; }
+
+  for (const a of aSet) {
+    if (!bSet.has(a)) { return false; }
+  }
+
+  return true;
+}
+
+export function areSetsNotEqual<T>(aSet: Set<T>, bSet: Set<T>): boolean {
+  if (aSet.size !== bSet.size) { return true; }
+
+  for (const a of aSet) {
+    if (!bSet.has(a)) { return true; }
+  }
+
+  return false;
+}

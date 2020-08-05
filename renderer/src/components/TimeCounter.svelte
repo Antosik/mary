@@ -1,7 +1,8 @@
 <script lang="typescript">
-  import { createEventDispatcher, onDestroy } from "svelte";
+  import { createEventDispatcher, onMount, onDestroy } from "svelte";
 
-  export let time: Date;
+  export let speed = 0.5;
+  export let end: Date;
 
   const dispatch = createEventDispatcher();
   let timediff: number = 0;
@@ -12,22 +13,32 @@
 
     timediff = (endTime.getTime() - Date.now()) / 1000;
     timer = setInterval(() => {
-      timediff -= 0.2;
+      timediff -= speed;
 
       if (timediff <= 0) {
         clearInterval(timer);
         dispatch("completed");
       }
-    }, 200);
+    }, speed * 1e3);
   };
 
-  $: initTimer(new Date(time));
+  $: initTimer(new Date(end));
 
-  const formatTime = (count: number) => count.toFixed(1);
+  const formatTime = (count: number) => count.toFixed(0);
+  const onVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      initTimer(new Date(end));
+    }
+  };
+
+  onMount(() => {
+    document.addEventListener("visibilitychange", onVisibilityChange);
+  });
 
   onDestroy(() => {
+    document.removeEventListener("visibilitychange", onVisibilityChange);
     clearInterval(timer);
   });
 </script>
 
-{#if time && timediff > 0}{formatTime(timediff)}s{/if}
+{#if end && timediff > 0}{formatTime(timediff)}s{/if}

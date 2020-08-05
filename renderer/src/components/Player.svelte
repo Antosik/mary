@@ -1,182 +1,188 @@
 <script lang="typescript">
-  import { onMount, onDestroy } from "svelte";
-  import { isExists, isNotEmpty } from "@mary-shared/utils/typeguards";
-  import { rpc } from "@mary-web/data/rpc";
-  import {
-    startListeningToIgnoreMouseEvents,
-    stopListeningToIgnoreMouseEvents,
-  } from "@mary-web/utils/mouseEvents";
+  import { createEventDispatcher } from "svelte";
+  import { isExists } from "@mary-shared/utils/typeguards";
 
-  import SummonerSpell from "./SummonerSpell.svelte";
-  import TimeCounter from "./TimeCounter.svelte";
-  import ChampionR from "./ChampionR.svelte";
+  import TimeCounter from "@mary-web/components/TimeCounter.svelte";
+  import SpellContainer from "./SpellContainer.svelte";
 
   export let summonerName: string;
   export let championName: string;
-  export let summonerSpells: string[] = [];
-
-  export let team: "ORDER" | "CHAOS";
-
+  export let summonerSpells: Set<string> = new Set<string>();
+  export let level: number;
   export let isDead: boolean = false;
   export let respawnTimer: number = 0;
+
+  export let cooldowns: IInternalPlayerCooldown[] = [];
+  export let direction: "left" | "right" = "left";
+  export let track: TInternalPlayerTrackTargets;
+
+  const dispatch = createEventDispatcher();
 
   let respawnTime: Date;
   $: respawnTime = new Date(Date.now() + respawnTimer * 1e3);
 
-  export let cooldowns: IInternalCooldown[] = [];
+  let summonerSpellsArray: string[] = [];
+  $: summonerSpellsArray = [...summonerSpells];
 
-  function getCooldown(cooldowns: IInternalCooldown[], target: string) {
-    return cooldowns.find((cd) => cd.target === target);
-  }
+  const spellTarget: TInternalCooldownTarget[] = ["P", "Q", "W", "E"];
 
-  async function setCooldown(target: string) {
-    const cooldown = await rpc.invoke<IInternalCooldown>(
-      "cooldowns:set",
-      summonerName,
-      championName,
-      target
-    );
-    if (isExists(cooldown)) {
-      cooldowns.push(cooldown);
-    }
-  }
-
+  const getCooldown = (cooldowns: IInternalPlayerCooldown[], target: string) =>
+    cooldowns.find((cd) => cd.target === target);
+  const setCooldown = (target: string) => {
+    dispatch("cooldown-set", { summonerName, target });
+  };
+  const resetCooldown = (target: string) => {
+    dispatch("cooldown-reset", { summonerName, target });
+  };
   const onDeadTimerDone = () => (isDead = false);
-
-  let player: HTMLDivElement | undefined = undefined;
-
-  onMount(() => {
-    startListeningToIgnoreMouseEvents(player!);
-  });
-  onDestroy(() => {
-    stopListeningToIgnoreMouseEvents(player!);
-  });
 </script>
 
 <style>
   .player {
     display: grid;
     position: relative;
-    opacity: 0.7;
   }
-  .player:hover {
-    opacity: 1;
-  }
-
   .player__name {
-    grid-area: playerName;
     font-size: 16px;
+    grid-area: playerName;
   }
-  .player__champion {
-    position: relative;
-    grid-area: championIcon;
-  }
-
   .player__spells {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     grid-area: summonerSpells;
   }
-  .player__spells-item {
-    width: 24px;
-    height: 24px;
+  .player__champion {
+    position: relative;
+    grid-area: championIcon;
   }
-
-  .player__r {
-    width: 25px;
-    height: 25px;
-    border-radius: 50%;
-    overflow: hidden;
-    top: 30px;
-    left: 30px;
-    position: absolute;
+  .player__champion__icon {
+    width: 100%;
+    height: 100%;
   }
-
-  .player--has-cd {
-    opacity: 0.85;
-  }
-
-  .player--dead .player__champion:after {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.8);
-    z-index: 2;
-    content: "";
-  }
-  .player--dead .player__respawn-timer {
-    color: var(--cooldown-time);
+  .player__champion__cd {
+    background: rgba(0, 0, 0, 0.6);
+    color: #dc4141;
     font-weight: bold;
+    z-index: 2;
+  }
+  .player__ability,
+  .player__ultimate {
+    width: 50%;
+    height: 50%;
+    position: absolute;
+    bottom: 0;
     z-index: 3;
+    grid-area: championIcon;
   }
-
-  .player--team-order {
+  .player__ability {
+    top: 0;
+  }
+  .player__ultimate {
+    bottom: 0;
+  }
+  .player--direction-left {
     grid-template-areas:
-      "playerName playerName playerName"
-      "summonerSpells championIcon .";
-    grid-template-columns: 24px 50px 1fr;
-    grid-template-rows: 1fr 50px;
+      "playerName playerName"
+      "summonerSpells championIcon";
+    grid-template-columns: 1fr 2fr;
+    grid-template-rows: max-content max-content;
   }
-  .player--team-order .player__name {
+  .player--direction-left .player__name {
     text-align: left;
   }
-
-  .player--team-chaos {
-    grid-template-areas:
-      "playerName playerName playerName"
-      ". championIcon summonerSpells";
-    grid-template-columns: 1fr 50px 24px;
-    grid-template-rows: 1fr 50px;
+  .player--direction-left .player__ability {
+    right: 0;
+    transform: translate(20%, -20%);
   }
-  .player--team-chaos .player__name {
+  .player--direction-left .player__ultimate {
+    right: 0;
+    transform: translate(20%, 20%);
+  }
+  .player--direction-right {
+    grid-template-areas:
+      "playerName playerName"
+      "championIcon summonerSpells";
+    grid-template-columns: 2fr 1fr;
+    grid-template-rows: max-content max-content;
+  }
+  .player--direction-right .player__name {
     text-align: right;
+  }
+  .player--direction-right .player__ability {
+    left: 0;
+    transform: translate(-20%, -20%);
+  }
+  .player--direction-right .player__ultimate {
+    left: 0;
+    transform: translate(-20%, 20%);
   }
 </style>
 
 <div
   class="player"
-  class:player--has-cd={isNotEmpty(cooldowns)}
-  class:player--dead={isDead}
-  class:player--team-order={team === 'ORDER'}
-  class:player--team-chaos={team === 'CHAOS'}
-  bind:this={player}>
+  class:player--direction-left={direction === 'left'}
+  class:player--direction-right={direction === 'right'}>
   <h3 class="player__name">{summonerName}</h3>
-  <div class="player__champion">
+  <ul class="player__spells">
+    {#if isExists(summonerSpellsArray[0])}
+      <li class="player__spells__item">
+        <SpellContainer
+          icon="./img/spells/{summonerSpellsArray[0]}.png"
+          cooldown={getCooldown(cooldowns, 'D')}
+          on:set={() => setCooldown('D')}
+          on:reset={() => resetCooldown('D')} />
+      </li>
+    {/if}
+    {#if isExists(summonerSpellsArray[1])}
+      <li class="player__spells__item">
+        <SpellContainer
+          icon="./img/spells/{summonerSpellsArray[1]}.png"
+          cooldown={getCooldown(cooldowns, 'F')}
+          on:set={() => setCooldown('F')}
+          on:reset={() => resetCooldown('F')} />
+      </li>
+    {/if}
+  </ul>
+  <div class="player__champion" class:player__champion--dead={isDead}>
     {#if championName}
       <img
-        src="https://cdn.communitydragon.org/latest/champion/{championName}/square"
-        alt={championName} />
+        src="./img/champions/{championName}.png"
+        alt={championName}
+        class="player__champion__icon absolute-full" />
     {:else}
       <img
-        src="https://cdn.communitydragon.org/latest/champion/generic/square"
-        alt="???" />
+        src="./img/champions/square.png"
+        alt="???"
+        class="player__champion__icon absolute-full" />
     {/if}
 
     {#if isDead && respawnTimer > 0}
-      <span class="player__respawn-timer absolute-full flex-center">
-        <TimeCounter time={respawnTime} on:completed={onDeadTimerDone} />
+      <span class="player__champion__cd absolute-full flex-center">
+        <TimeCounter end={respawnTime} on:completed={onDeadTimerDone} />
       </span>
     {/if}
-
-    <div class="player__r">
-      <ChampionR
-        {championName}
-        cooldown={getCooldown(cooldowns, 'R')}
-        on:click={() => setCooldown('R')} />
-    </div>
   </div>
-  <ul class="player__spells">
-    {#each summonerSpells as summonerSpell (summonerSpell)}
-      <li class="player__spells-item">
-        <SummonerSpell
-          {summonerSpell}
-          cooldown={getCooldown(cooldowns, summonerSpell)}
-          side={team === 'ORDER' ? 'left' : 'right'}
-          on:click={() => setCooldown(summonerSpell)} />
-      </li>
-    {/each}
-  </ul>
+  {#if track.R && level >= 6}
+    <div class="player__ultimate">
+      <SpellContainer
+        rounded
+        icon="./img/abilities/{championName}R.png"
+        cooldown={getCooldown(cooldowns, 'R')}
+        on:set={() => setCooldown('R')}
+        on:reset={() => resetCooldown('R')} />
+    </div>
+  {/if}
+  {#each spellTarget as target (target)}
+    {#if track[target]}
+      <div class="player__ability">
+        <SpellContainer
+          rounded
+          icon="./img/abilities/{championName}{target}.png"
+          cooldown={getCooldown(cooldowns, target)}
+          on:set={() => setCooldown(target)}
+          on:reset={() => resetCooldown(target)} />
+      </div>
+    {/if}
+  {/each}
 </div>

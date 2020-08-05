@@ -1,80 +1,71 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import type { BrowserWindow, IpcMainEvent, IpcMainInvokeEvent } from "electron";
+import { BrowserWindow, IpcMainInvokeEvent, IpcMainEvent } from "electron";
 
 import { ipcMain } from "electron";
-import { EventEmitter } from "events";
 
+import { EventsWithInvoke } from "@mary-main/utils/eventsExtended";
 import { logDebug } from "@mary-main/utils/log";
 import { Result } from "@mary-shared/utils/result";
-import { flowId } from "@mary-shared/utils/rpc";
+import { isNotExists } from "@mary-shared/utils/typeguards";
 
 
-export type IRPCHandlerFunc = (...args: any[]) => Result | Promise<Result> | void | Promise<void>; // eslint-disable-line @typescript-eslint/no-explicit-any
+export class MainRPC extends EventsWithInvoke implements IDestroyable {
 
+  #id: string;
+  #window: BrowserWindow;
 
-export class MainRPC extends EventEmitter {
-  private _id: string = flowId;
-  private _window: BrowserWindow;
-  private _handlers: Map<string, IRPCHandlerFunc>;
-
-  constructor(window: BrowserWindow) {
+  constructor(id: string, window: BrowserWindow) {
     super();
 
-    this._window = window;
-    this._handlers = new Map<string, IRPCHandlerFunc>();
+    this.#id = id;
+    this.#window = window;
 
-    this.handleFlow = this.handleFlow.bind(this);       // eslint-disable-line @typescript-eslint/no-unsafe-assignment
-    this.handleInvoke = this.handleInvoke.bind(this);   // eslint-disable-line @typescript-eslint/no-unsafe-assignment
-
-    ipcMain.on(this._id, this.handleFlow);
-    ipcMain.handle(this._id, this.handleInvoke);
-  }
-
-  public get wc(): Electron.WebContents {
-    return this._window.webContents;
+    ipcMain.on(this.#id, this._handleFlow);
+    ipcMain.handle(this.#id, this._handleInvoke);
   }
 
 
   // #region Main
-  public send(event: string, data: unknown = undefined): void {
-    this.emit(event, data);
-    this.wc.send(this._id, { event, data });
+  public send(event: string, data: RPCDataType = undefined): void {
+    this.#window.webContents.send(this.#id, { event, data });
   }
-
-  public setHandler(event: string, handler: IRPCHandlerFunc): void { // eslint-disable-line @typescript-eslint/no-explicit-any
-    this._handlers.set(event, handler);
-  }
-
-  public destroy(): void {
-    this._handlers.clear();
-
-    this.removeAllListeners();
-    this.wc.removeAllListeners();
-
-    ipcMain.removeListener(this._id, this.handleFlow);
-    ipcMain.removeHandler(this._id);
-  }
-  // #endregion
+  // #endregion Main
 
 
   // #region Flow handlers
-  private handleFlow(_: IpcMainEvent, { event, data }: { event: string, data: unknown }): void {
+  private _handleFlow = (_: IpcMainEvent, { event, data }: { event: string, data: unknown }): void => {
     super.emit(event, data);
-  }
+  };
 
-  private handleInvoke(_: IpcMainInvokeEvent, { event, data }: { event: string, data: unknown[] }): Result | Promise<Result> {
-    const handler = this._handlers.get(event);
+  private _handleInvoke = (_: IpcMainInvokeEvent, { event, data }: { event: string, data: unknown[] }): RPCDataType => {
+    const handler = this.handlers.get(event);
 
-    if (handler === undefined) {
+    if (isNotExists(handler)) {
       logDebug(`Internal: unknown event - ${event}`);
       return Result.create()
         .setStatus("error")
         .setNotification("Внутренняя ошибка приложения");
     }
 
-    return handler(...data);
-  }
+    return typeof data === "undefined"
+      ? handler()
+      : handler(...data);
+  };
   // #endregion
-}
 
-export const createMainRPC = (window: BrowserWindow): MainRPC => new MainRPC(window);
+
+  // #region Cleanup
+  public destroy(): void {
+    super.destroy();
+
+    this.removeAllListeners();
+
+    if (!this.#window.isDestroyed() && !this.#window.webContents.isDestroyed()) {
+      this.#window.webContents.removeAllListeners();
+    }
+
+    ipcMain.removeHandler(this.#id);
+    ipcMain.removeAllListeners(this.#id);
+  }
+  // #endregion Cleanup
+}

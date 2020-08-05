@@ -1,20 +1,8 @@
 :root {
   --cooldown-time: hsl(0, 75%, 50%); /* #DC4141 */
-  --status-game-normal: hsl(202, 99%, 33%); /* #016AA7 */
-  --status-game-light: hsl(202, 69%, 56%); /* #41A3DC */
-  --status-active-normal: hsl(147, 99%, 33%); /* #02A64B */
-  --status-active-light: hsl(147, 69%, 56%); /* #42DD88 */
-  --status-away: hsl(0, 75%, 50%); /* #DC4141 */
-  --status-unknown: hsl(0, 0%, 60%); /* #666666 */
-  --main-primary: hsl(46, 52%, 92%); /* #F5F0DF */
-  --main-secondary: hsl(42, 40%, 60%); /* #C2AA70 */
-  --main-medium: hsl(42, 40%, 80%); /* #E0D4B8 */
-  --main-dark: hsl(42, 16%, 44%); /* #C2AA70 */
-  --main-background: hsl(60, 5%, 8%); /* #161614 */
-  --main-background-transparent: hsla(218, 80%, 2%, 0.65); /* rgba(1, 4, 9, 0.65) */
-  --main-background-transparent-dark: hsla(218, 80%, 2%, 0.85); /* rgba(1, 4, 9, 0.85) */
+  --main-primary: hsl(60, 5%, 8%); /* #F5F0DF */
+  --main-secondary: hsl(0, 0%, 60%); /* #C2AA70 */
   --grid-gap: 20px;
-  --topbar-height: 24px;
 }
 
 html,

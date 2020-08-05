@@ -1,0 +1,98 @@
+{
+  "Akali": [
+    {
+      "target": "W",
+      "cooldowns": [
+        20,
+        20,
+        20,
+        20,
+        20
+      ]
+    }
+  ],
+  "AurelionSol": [
+    {
+      "target": "E",
+      "cooldowns": [
+        80,
+        75,
+        70,
+        65,
+        60
+      ]
+    }
+  ],
+  "Fiora": [
+    {
+      "target": "W",
+      "cooldowns": [
+        24,
+        22,
+        20,
+        18,
+        16
+      ]
+    }
+  ],
+  "Morgana": [
+    {
+      "target": "E",
+      "cooldowns": [
+        26,
+        24,
+        22,
+        20,
+        18
+      ]
+    }
+  ],
+  "Senna": [
+    {
+      "target": "E",
+      "cooldowns": [
+        26,
+        24.5,
+        23,
+        21.5,
+        20
+      ]
+    }
+  ],
+  "TahmKench": [
+    {
+      "target": "W",
+      "cooldowns": [
+        20,
+        20,
+        20,
+        20,
+        20
+      ]
+    }
+  ],
+  "Vladimir": [
+    {
+      "target": "W",
+      "cooldowns": [
+        28,
+        25,
+        22,
+        19,
+        16
+      ]
+    }
+  ],
+  "Yasuo": [
+    {
+      "target": "W",
+      "cooldowns": [
+        30,
+        27,
+        24,
+        21,
+        18
+      ]
+    }
+  ]
+}

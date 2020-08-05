@@ -3,25 +3,51 @@ name: CI
 on: [push]
 
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
-    strategy:
-      matrix:
-        node-version: [10.x, 12.x]
-
+  build-win:
+    runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v1
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: npm install, build, and lint
+        run: |
+          npm ci
+          npm run compile
+          npm run lint
+        env:
+          CI: true
 
-    - name: npm install, build, and lint
-      run: |
-        npm ci
-        npm run compile
-        npm run lint
-      env:
-        CI: true
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: install native deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libxtst-dev libxrandr-dev libpng++-dev
+      - name: npm install, build, and lint
+        run: |
+          npm ci
+          npm run compile
+          npm run lint
+        env:
+          CI: true
+
+  build-macos:
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: 12
+      - name: npm install, build, and lint
+        run: |
+          npm ci
+          npm run compile
+          npm run lint
+        env:
+          CI: true

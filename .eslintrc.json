@@ -27,7 +27,9 @@
   "parserOptions": {
     "sourceType": "module",
     "project": [
-      "tsconfig.json"
+      "tsconfig.json",
+      "main/tsconfig.json",
+      "renderer/tsconfig.json"
     ]
   },
   "rules": {

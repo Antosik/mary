@@ -20,7 +20,7 @@ const config: Configuration = {
   devtool: isProduction ? "hidden-source-map" : "cheap-module-source-map",
 
   resolve: {
-    extensions: [".mjs", ".js", ".ts"],
+    extensions: [".js", ".ts", ".node"],
     alias
   },
   entry: joinPath(__dirname, "src/index.ts"),
@@ -32,6 +32,11 @@ const config: Configuration = {
   module: {
     rules: [
       {
+        test: /\.mjs$/,
+        include: /node_modules/,
+        type: "javascript/auto"
+      },
+      {
         test: /\.ts$/,
         use: [
           {
@@ -41,8 +46,17 @@ const config: Configuration = {
             }
           }
         ]
+      },
+      {
+        test: /\.node$/,
+        use: 'node-loader'
       }
     ]
+  },
+
+  externals: {
+    "electron-overlay-window": 'require("electron-overlay-window")',
+    "uiohook-napi": 'require("uiohook-napi")'
   },
 
   plugins: [
@@ -57,7 +71,7 @@ const config: Configuration = {
           to: joinPath(__dirname, "..", "target")
         }
       ]
-    }),
+    })
   ],
 
   optimization: {
@@ -70,7 +84,7 @@ const config: Configuration = {
         keep_fnames: true,
       },
     })]
-  },
+  }
 }
 
 export default config;

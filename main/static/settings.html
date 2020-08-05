@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta http-equiv="Content-Security-Policy"
+    content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:">
+  <title>Mary - Settings</title>
+  <link rel="preload" href="./css/window.css" as="style">
+  <link rel="stylesheet" href="./css/window.css">
+  <link rel="stylesheet" href="./css/style.css">
+  <link rel="stylesheet" href="./css/settings.css">
+  <link rel="stylesheet" href="./css/fonts.css">
+</head>
+
+<body>
+
+  <div class="window-controls">
+    <button class="flex-center window-control" type="button" id="hide-button">
+      <svg xmlns="http://www.w3.org/2000/svg" stroke="#2c3e50" fill="none" stroke-linecap="round"
+        stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M5 12h14" /></svg>
+    </button>
+    <button class="flex-center window-control" type="button" id="unmaximize-button">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#2c3e50" stroke-linecap="round"
+        stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24" transform="scale(-1,-1)">
+        <rect width="12" height="12" x="8" y="4" rx="2" />
+        <path d="M16 16v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-8a2 2 0 012-2h2" />
+      </svg>
+    </button>
+    <button class="flex-center window-control" type="button" id="maximize-button">
+      <svg xmlns="http://www.w3.org/2000/svg" stroke="#2c3e50" fill="none" stroke-linecap="round"
+        stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24">
+        <rect width="16" height="16" x="4" y="4" rx="2" /></svg>
+    </button>
+    <button class="flex-center window-control" type="button" id="close-button">
+      <svg xmlns="http://www.w3.org/2000/svg" stroke="#2c3e50" fill="none" stroke-linecap="round"
+        stroke-linejoin="round" stroke-width="1.5" viewBox="0 0 24 24">
+        <path d="M18 6L6 18M6 6l12 12" /></svg>
+    </button>
+  </div>
+
+  <div id="app"></div>
+
+  <script src="./renderer/settings.js"></script>
+</body>
+
+</html>
