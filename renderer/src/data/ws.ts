@@ -24,6 +24,8 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
 
     this.#ip = window.location.host;
     this._connect();
+
+    document.addEventListener("visibilitychange", this._onVisibilityChange);
   }
 
   private _connect() {
@@ -34,13 +36,12 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
     this.#ws = new WebSocket(`ws://${this.#ip}`);
 
     this.#ws.addEventListener("message", this.handleFlow);
+    this.#ws.addEventListener("error", this._initTimer);
     if (isExists(this.#onOpen)) {
       this.#ws.addEventListener("open", this.#onOpen);
     }
 
-    if (isNotExists(this.#pingTimer)) {
-      this.#pingTimer = setInterval(this._ping, ClientRPC.PING_INTERVAL);
-    }
+    this._initTimer();
   }
 
   // #region Main
@@ -71,6 +72,22 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
     }
   }
 
+  private _onVisibilityChange = () => {
+    if (document.visibilityState === "visible") {
+      this._initTimer();
+    }
+  };
+
+  private _initTimer = (): void => {
+
+    if (isExists(this.#pingTimer)) {
+      clearInterval(this.#pingTimer);
+    }
+
+    this._ping();
+    this.#pingTimer = setInterval(this._ping, ClientRPC.PING_INTERVAL);
+  };
+
   private _ping = (): void => {
     if (this.#ws?.readyState === WebSocket.OPEN) {
       this.#ws.send(JSON.stringify({ event: "ping" }));
@@ -98,6 +115,7 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
   public destroy(): void {
 
     this.removeAllListeners();
+    document.removeEventListener("visibilitychange", this._onVisibilityChange);
 
     if (isExists(this.#pingTimer)) {
       clearInterval(this.#pingTimer);
@@ -112,5 +130,3 @@ export class ClientRPC extends EventEmitter implements IClientRPC, IDestroyable 
   }
   // #endregion Cleanup
 }
-
-export const rpc = new ClientRPC();

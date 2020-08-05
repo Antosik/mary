@@ -1,7 +1,7 @@
 <script lang="typescript">
   import { createEventDispatcher, onMount, onDestroy } from "svelte";
 
-  export let speed = 0.2;
+  export let speed = 0.5;
   export let end: Date;
 
   const dispatch = createEventDispatcher();
@@ -26,12 +26,14 @@
 
   const formatTime = (count: number) => count.toFixed(0);
   const onVisibilityChange = () => {
-    initTimer(new Date(end));
-  }
+    if (document.visibilityState === "visible") {
+      initTimer(new Date(end));
+    }
+  };
 
   onMount(() => {
     document.addEventListener("visibilitychange", onVisibilityChange);
-  })
+  });
 
   onDestroy(() => {
     document.removeEventListener("visibilitychange", onVisibilityChange);

@@ -249,5 +249,5 @@
           on:cooldown-reset={onCooldownReset} />
       </Team>
     {/if}
-  {:else}Игра не запущена{/if}
+  {:else}Game is not started{/if}
 </div>

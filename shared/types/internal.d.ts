@@ -16,10 +16,15 @@ declare interface ISpellInfo {
   name: string;
   cooldown: number | ILevelDependantCD;
 }
+declare type TInternalCooldownTargetAbility = "Q" | "W" | "E";
+declare type TInternalCooldownTargetUltimate = "R";
+declare type TInternalCooldownTargetSummonerSpell = "D" | "F";
+declare type TInternalCooldownTargetPassive = "P";
 declare type TInternalCooldownTarget =
-  | "Q" | "W" | "E" | "R"
-  | "D" | "F"             // first and second summoner skills
-  | "P";                  // passive
+  | TInternalCooldownTargetAbility
+  | TInternalCooldownTargetUltimate
+  | TInternalCooldownTargetSummonerSpell
+  | TInternalCooldownTargetPassive;
 declare type TInternalCooldownObject =
   | "Elder"
   | "Baron"
@@ -62,6 +67,7 @@ declare type TInternalEventsCDRMap = {
   dragons: TInternalCooldownReduction[];
 };
 declare type TInternalPlayerCDRMap = TInternalMapInfoCDRMap & TInternalStatsCDRMap & TInternalEventsCDRMap;
+declare type TInternalPlayerTrackTargets = Record<TInternalCooldownTarget, boolean>;
 declare type TInternalPlayerStats = {
   summonerName: string;
   championName: string;
@@ -74,6 +80,8 @@ declare type TInternalPlayerStats = {
 
   isDead: boolean;
   respawnTimer: number;
+
+  track?: TInternalPlayerTrackTargets;
 };
 declare interface IInternalPlayer {
   stats: TInternalPlayerStats;

@@ -39,6 +39,7 @@
     color: #dc4141;
     font-weight: bold;
     z-index: 2;
+    will-change: contents;
   }
 </style>
 

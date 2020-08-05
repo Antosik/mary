@@ -53,12 +53,21 @@
       class="player__champion" />
 
     <div class="player__target">
-      {#if cooldown.target === 'R'}
-        <SpellContainerMini icon="./img/abilities/{championName}R.png" {cooldown} {direction} />
-      {:else if cooldown.target === 'D'}
-        <SpellContainerMini icon="./img/spells/{summonerSpellsArray[0]}.png" {cooldown} {direction} />
+      {#if cooldown.target === 'D'}
+        <SpellContainerMini
+          icon="./img/spells/{summonerSpellsArray[0]}.png"
+          {cooldown}
+          {direction} />
       {:else if cooldown.target === 'F'}
-        <SpellContainerMini icon="./img/spells/{summonerSpellsArray[1]}.png" {cooldown} {direction} />
+        <SpellContainerMini
+          icon="./img/spells/{summonerSpellsArray[1]}.png"
+          {cooldown}
+          {direction} />
+      {:else}
+        <SpellContainerMini
+          icon="./img/abilities/{championName}{cooldown.target}.png"
+          {cooldown}
+          {direction} />
       {/if}
     </div>
   </div>

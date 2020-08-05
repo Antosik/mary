@@ -2,11 +2,15 @@ import type { Player } from "@mary-main/model/player";
 
 import { ULTIMATE_HUNTER_ID, COSMIC_INSIGHT_ID } from "@mary-main/consts/runes";
 import { spells, TELEPORT_CONST } from "@mary-main/consts/spells";
+import abilityData from "@mary-main/consts/ability.json";
+import passiveAbilityData from "@mary-main/consts/passive.json";
 import ultimateAbilityData from "@mary-main/consts/ultimate.json";
-import { isBlank, isNotExists, isEmpty } from "@mary-shared/utils/typeguards";
+import { isBlank, isNotExists, isEmpty, isExists } from "@mary-shared/utils/typeguards";
 
 
-const Ultimate: Record<string, number[]> = ultimateAbilityData;
+const UltimateAbility = ultimateAbilityData as Record<string, number[]>;
+const PassiveAbility = passiveAbilityData as Record<string, number>;
+const Ability = abilityData as Record<string, Array<{ target: TInternalCooldownTargetAbility, cooldowns: number[] }>>;
 
 
 export class CooldownCalculator {
@@ -16,22 +20,15 @@ export class CooldownCalculator {
   private static _summonerSpellsTargets: TInternalCooldownTarget[] = ["D", "F"];
 
   private static _getInitialPassiveAbilityCooldown(_: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
-
-    if (stats.championName === "Zac") {
-      return 300;
-    }
-
-    if (stats.championName === "Anivia") {
-      return 240;
-    }
-
-    return 0;
+    return stats.track?.P && isExists(PassiveAbility[stats.championName])
+      ? PassiveAbility[stats.championName]
+      : 0;
   }
 
-  private static _getInitialAbilityCooldown(_: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
+  private static _getInitialUltimateAbilityCooldown(_: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
 
-    const cd: number[] = Ultimate[stats.championName];
-    if (isEmpty(cd)) {
+    const cd: number[] = UltimateAbility[stats.championName];
+    if (isEmpty(cd) || !stats.track?.R) {
       return 0;
     }
 
@@ -48,6 +45,25 @@ export class CooldownCalculator {
     }
 
     return 0;
+  }
+
+  private static _getInitialAbilityCooldown(target: TInternalCooldownTarget, stats: TInternalPlayerStats): number {
+
+    if (!stats.track?.[target] || isEmpty(Ability[stats.championName])) {
+      return 0;
+    }
+
+    const ability = Ability[stats.championName].find(a => a.target === target);
+    if (isNotExists(ability)) {
+      return 0;
+    }
+
+    const skillLevelTemp = Math.ceil(stats.level / 2);
+    const skillLevel = skillLevelTemp > 5 ? 5 : skillLevelTemp;
+
+    return isExists(ability.cooldowns[skillLevel - 1])
+      ? ability.cooldowns[skillLevel - 1]
+      : 0;
   }
 
   private static _getSummonerSpellInfo(target: TInternalCooldownTarget, stats: TInternalPlayerStats): ISpellInfo | undefined {
@@ -79,6 +95,10 @@ export class CooldownCalculator {
 
     if (CooldownCalculator._passiveTargets.includes(target)) {
       return CooldownCalculator._getInitialPassiveAbilityCooldown(target, stats);
+    }
+
+    if (target === "R") {
+      return CooldownCalculator._getInitialUltimateAbilityCooldown(target, stats);
     }
 
     if (CooldownCalculator._abilityTargets.includes(target)) {

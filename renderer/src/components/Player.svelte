@@ -8,11 +8,13 @@
   export let summonerName: string;
   export let championName: string;
   export let summonerSpells: Set<string> = new Set<string>();
+  export let level: number;
   export let isDead: boolean = false;
   export let respawnTimer: number = 0;
 
   export let cooldowns: IInternalPlayerCooldown[] = [];
   export let direction: "left" | "right" = "left";
+  export let track: TInternalPlayerTrackTargets;
 
   const dispatch = createEventDispatcher();
 
@@ -21,6 +23,8 @@
 
   let summonerSpellsArray: string[] = [];
   $: summonerSpellsArray = [...summonerSpells];
+
+  const spellTarget: TInternalCooldownTarget[] = ["P", "Q", "W", "E"];
 
   const getCooldown = (cooldowns: IInternalPlayerCooldown[], target: string) =>
     cooldowns.find((cd) => cd.target === target);
@@ -62,6 +66,7 @@
     font-weight: bold;
     z-index: 2;
   }
+  .player__ability,
   .player__ultimate {
     width: 50%;
     height: 50%;
@@ -69,6 +74,12 @@
     bottom: 0;
     z-index: 3;
     grid-area: championIcon;
+  }
+  .player__ability {
+    top: 0;
+  }
+  .player__ultimate {
+    bottom: 0;
   }
   .player--direction-left {
     grid-template-areas:
@@ -79,6 +90,10 @@
   }
   .player--direction-left .player__name {
     text-align: left;
+  }
+  .player--direction-left .player__ability {
+    right: 0;
+    transform: translate(20%, -20%);
   }
   .player--direction-left .player__ultimate {
     right: 0;
@@ -93,6 +108,10 @@
   }
   .player--direction-right .player__name {
     text-align: right;
+  }
+  .player--direction-right .player__ability {
+    left: 0;
+    transform: translate(-20%, -20%);
   }
   .player--direction-right .player__ultimate {
     left: 0;
@@ -144,12 +163,26 @@
       </span>
     {/if}
   </div>
-  <div class="player__ultimate">
-    <SpellContainer
-      rounded
-      icon="./img/abilities/{championName}R.png"
-      cooldown={getCooldown(cooldowns, 'R')}
-      on:set={() => setCooldown('R')}
-      on:reset={() => resetCooldown('R')} />
-  </div>
+  {#if track.R && level >= 6}
+    <div class="player__ultimate">
+      <SpellContainer
+        rounded
+        icon="./img/abilities/{championName}R.png"
+        cooldown={getCooldown(cooldowns, 'R')}
+        on:set={() => setCooldown('R')}
+        on:reset={() => resetCooldown('R')} />
+    </div>
+  {/if}
+  {#each spellTarget as target (target)}
+    {#if track[target]}
+      <div class="player__ability">
+        <SpellContainer
+          rounded
+          icon="./img/abilities/{championName}{target}.png"
+          cooldown={getCooldown(cooldowns, target)}
+          on:set={() => setCooldown(target)}
+          on:reset={() => resetCooldown(target)} />
+      </div>
+    {/if}
+  {/each}
 </div>

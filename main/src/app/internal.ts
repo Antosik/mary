@@ -70,7 +70,6 @@ export class MaryInternal implements IDestroyable {
 
     if (isNotExists(this.#game)) {
       await this._initGame();
-      this._sendMeta();
     }
 
     this._sendConnected();
